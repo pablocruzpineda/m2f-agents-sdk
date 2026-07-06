@@ -1,0 +1,26 @@
+{
+  "name": "@mind2flow/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for the Mind2Flow AI agents platform",
+  "keywords": ["ai", "agents", "mind2flow", "cli"],
+  "license": "MIT",
+  "bin": {
+    "m2f": "./dist/index.js"
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@mind2flow/agents-sdk": "^0.1.0",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  }
+}
