@@ -5,7 +5,7 @@ Thanks for your interest in improving the Mind2Flow SDK & CLI!
 ## Development setup
 
 ```bash
-git clone https://github.com/mind2flow/m2f-agents-sdk.git
+git clone https://github.com/pablocruzpineda/m2f-agents-sdk.git
 cd m2f-agents-sdk
 npm install
 npm run build

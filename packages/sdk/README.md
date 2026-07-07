@@ -18,4 +18,4 @@ const { result } = await m2f.agents.execute(agent.id, { input: 'Hello!' });
 Resources: `agents`, `crews`, `devices`, `tools`, `scheduledTasks`, `account`.
 
 Requires Node 18+ (uses built-in `fetch`). Full docs:
-https://github.com/mind2flow/m2f-agents-sdk
+https://github.com/pablocruzpineda/m2f-agents-sdk

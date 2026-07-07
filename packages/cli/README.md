@@ -17,4 +17,4 @@ m2f mcp setup --mcp-key mcp_xxx        # wire Mind2Flow into Cursor
 Configuration lives in `~/.m2f/config.json`; `M2F_API_KEY` / `M2F_BASE_URL`
 environment variables override it.
 
-Full docs: https://github.com/mind2flow/m2f-agents-sdk
+Full docs: https://github.com/pablocruzpineda/m2f-agents-sdk

@@ -4,6 +4,15 @@
   "description": "Command-line interface for the Mind2Flow AI agents platform",
   "keywords": ["ai", "agents", "mind2flow", "cli"],
   "license": "MIT",
+  "homepage": "https://github.com/pablocruzpineda/m2f-agents-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pablocruzpineda/m2f-agents-sdk.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/pablocruzpineda/m2f-agents-sdk/issues"
+  },
   "bin": {
     "m2f": "./dist/index.js"
   },
