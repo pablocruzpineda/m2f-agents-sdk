@@ -234,3 +234,123 @@ export interface AccountMe {
     scopes?: string[];
   };
 }
+
+// ---------------------------------------------------------------------------
+// Knowledge (GraphOS)
+// ---------------------------------------------------------------------------
+
+export interface KnowledgeFact {
+  uuid?: string | null;
+  fact: string;
+  valid_at?: string | null;
+  /** In the future = validity window end; in the past = superseded. */
+  invalid_at?: string | null;
+}
+
+export type KnowledgeSourceType = 'file' | 'sql' | 'rest' | 'composio';
+
+export interface KnowledgeSource {
+  id: string;
+  type: KnowledgeSourceType;
+  name: string;
+  status: 'active' | 'paused' | 'error';
+  /** Credentials are masked in responses. */
+  config: Record<string, unknown>;
+  document_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeDocument {
+  id: string;
+  source_id: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  status: 'pending' | 'ingested' | 'skipped' | 'failed';
+  error?: string | null;
+  episode_count: number;
+  created_at: string;
+  ingested_at?: string | null;
+}
+
+export interface KnowledgeJob {
+  id: string;
+  source_id: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  stats: { total?: number; ingested?: number; skipped?: number; failed?: number };
+  error?: string | null;
+  created_at: string;
+  finished_at?: string | null;
+}
+
+export interface KnowledgeManualEntry {
+  id: string;
+  statement: string;
+  valid_from?: string | null;
+  valid_until?: string | null;
+  status: 'processing' | 'scheduled' | 'active' | 'expired' | 'failed';
+  error?: string | null;
+  created_at: string;
+}
+
+export interface KnowledgeGraphNode {
+  id: string;
+  name: string;
+  degree: number;
+  type?: string | null;
+  kind?: string;
+}
+
+export interface KnowledgeGraphEdge {
+  id?: string | null;
+  source: string;
+  target: string;
+  fact?: string | null;
+  valid_at?: string | null;
+  invalid_at?: string | null;
+  kind?: string;
+}
+
+export interface KnowledgeGraph {
+  nodes: KnowledgeGraphNode[];
+  edges: KnowledgeGraphEdge[];
+}
+
+export interface KnowledgeEntityDetail {
+  uuid: string;
+  name?: string | null;
+  summary?: string | null;
+  facts: Array<{
+    fact?: string | null;
+    valid_at?: string | null;
+    invalid_at?: string | null;
+    related?: string | null;
+    related_uuid?: string | null;
+  }>;
+}
+
+export interface KnowledgeUsage {
+  totals: {
+    sources: number;
+    documents: number;
+    storage_bytes: number;
+    episodes: number;
+    manual_entries: number;
+  };
+  this_month: { period: string; episodes: number; queries: number };
+  monthly: Array<{ period: string; queries: number; episodes: number }>;
+  limits: { monthly_episode_limit: number | null; remaining_this_month: number | null };
+}
+
+export interface KnowledgeSourceCreateParams {
+  type: KnowledgeSourceType;
+  name: string;
+  config?: Record<string, unknown>;
+}
+
+export interface KnowledgeManualCreateParams {
+  statement: string;
+  valid_from?: string;
+  valid_until?: string;
+}

@@ -7,6 +7,7 @@ import { registerDeviceCommands } from './commands/devices';
 import { registerToolCommands } from './commands/tools';
 import { registerTaskCommands } from './commands/tasks';
 import { registerMcpCommands } from './commands/mcp';
+import { registerKnowledgeCommands } from './commands/knowledge';
 
 const program = new Command();
 
@@ -22,5 +23,6 @@ registerDeviceCommands(program);
 registerToolCommands(program);
 registerTaskCommands(program);
 registerMcpCommands(program);
+registerKnowledgeCommands(program);
 
 program.parseAsync(process.argv);

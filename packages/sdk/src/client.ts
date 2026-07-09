@@ -5,6 +5,7 @@ import { DevicesResource } from './resources/devices';
 import { ToolsResource } from './resources/tools';
 import { ScheduledTasksResource } from './resources/scheduledTasks';
 import { AccountResource } from './resources/account';
+import { KnowledgeResource } from './resources/knowledge';
 
 export const DEFAULT_BASE_URL = 'https://api.mind2flow.io/api/v1';
 
@@ -39,6 +40,7 @@ export class M2FClient {
   readonly tools: ToolsResource;
   readonly scheduledTasks: ScheduledTasksResource;
   readonly account: AccountResource;
+  readonly knowledge: KnowledgeResource;
 
   constructor(options: M2FClientOptions) {
     if (!options.apiKey) {
@@ -59,5 +61,6 @@ export class M2FClient {
     this.tools = new ToolsResource(http);
     this.scheduledTasks = new ScheduledTasksResource(http);
     this.account = new AccountResource(http);
+    this.knowledge = new KnowledgeResource(http);
   }
 }
