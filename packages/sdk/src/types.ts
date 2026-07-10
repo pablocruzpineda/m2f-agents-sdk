@@ -338,8 +338,15 @@ export interface KnowledgeUsage {
     episodes: number;
     manual_entries: number;
   };
-  this_month: { period: string; episodes: number; queries: number };
-  monthly: Array<{ period: string; queries: number; episodes: number }>;
+  this_month: {
+    period: string;
+    episodes: number;
+    queries: number;
+    /** Estimate of what OpenAI bills to the account's own key (BYOK). */
+    estimated_cost_usd?: number;
+    tokens?: { llm_input: number; llm_output: number; embeddings: number };
+  };
+  monthly: Array<{ period: string; queries: number; episodes: number; estimated_cost_usd?: number }>;
   limits: { monthly_episode_limit: number | null; remaining_this_month: number | null };
 }
 
