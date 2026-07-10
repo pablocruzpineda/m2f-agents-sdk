@@ -60,6 +60,13 @@ dashboard. Expired/revoked keys get `401`.
 
 ## Credits
 
-API usage consumes account credits per successful request (same pricing as
-dashboard usage). Check your balance with `m2f credits` or
-`client.account.credits()`.
+Every successful API/MCP request deducts platform credits from your account
+(flat per-request rate). Check your balance with `m2f credits` or
+`client.account.credits()`; top up in the dashboard. If the balance runs out,
+API access is suspended until you top up — a low-balance email is sent before
+that happens.
+
+LLM usage (agent runs, knowledge extraction/search) is **not** charged in
+credits: it bills directly to your own provider key (BYOK). For the knowledge
+graph, monitor it with `m2f knowledge usage` and cap it with
+`m2f knowledge usage --set-limit <n>`.

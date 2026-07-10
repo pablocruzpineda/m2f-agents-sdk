@@ -18,4 +18,10 @@ m2f mcp setup --mcp-key mcp_xxx        # wire Mind2Flow into Cursor
 Configuration lives in `~/.m2f/config.json`; `M2F_API_KEY` / `M2F_BASE_URL`
 environment variables override it.
 
+**Prerequisites** (one-time, in the [dashboard](https://app.mind2flow.io)): create a
+REST API key (Developers → API) and add your LLM provider key (Profile → API &
+Model Configuration — the knowledge graph needs an OpenAI key). API usage
+deducts platform credits per request (`m2f credits` shows the balance); LLM
+usage bills to your own key (BYOK).
+
 Full docs: https://github.com/pablocruzpineda/m2f-agents-sdk

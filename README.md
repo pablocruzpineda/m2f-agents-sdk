@@ -11,6 +11,7 @@ Both cover the full platform surface: **AI agents, multi-agent crews, devices (W
 
 ## Contents
 
+- [Prerequisites & billing](#prerequisites--billing)
 - [Getting an API key](#getting-an-api-key)
 - [SDK](#sdk)
 - [CLI](#cli)
@@ -20,6 +21,24 @@ Both cover the full platform surface: **AI agents, multi-agent crews, devices (W
 - [MCP server](#mcp-server)
 - [REST API](#rest-api)
 - [Self-hosted backends](#self-hosted-backends)
+
+## Prerequisites & billing
+
+Two one-time steps in the [dashboard](https://app.mind2flow.io) before the SDK/CLI work — neither can be done via the API:
+
+1. **Create a REST API key** under **Developers → API** (details below). This authenticates every SDK/CLI call.
+2. **Add your LLM provider key** under **Profile → API & Model Configuration** — required for anything that runs AI: agent execution uses your configured provider's key, and the **knowledge graph specifically requires an OpenAI key** (extraction + embeddings). Verify from code with `m2f.knowledge.keyStatus()`.
+
+After that, everything in this repo works from your terminal or IDE.
+
+**How you're charged — two separate meters:**
+
+| Meter | What | Who bills you |
+| --- | --- | --- |
+| **Platform credits** | Every successful API/MCP request deducts credits from your account (flat per-request rate) | Mind2Flow — top up in the dashboard; check with `m2f credits` |
+| **LLM usage** | Model tokens for agent runs and knowledge extraction/search (BYOK) | Your LLM provider (e.g. OpenAI) directly, on your own key |
+
+If your credit balance runs out, API access is suspended until you top up (you'll get an email first as the balance gets low). Knowledge-graph LLM spend is visible per month with `m2f knowledge usage`, and you can cap it with `m2f knowledge usage --set-limit <n>`.
 
 ## Getting an API key
 

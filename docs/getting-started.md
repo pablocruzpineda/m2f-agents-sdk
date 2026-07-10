@@ -8,6 +8,16 @@
 4. Pick the scopes you need (see [Authentication & scopes](authentication.md))
 5. Copy the `rest_...` key — it is shown **only once**
 
+## 1b. Add your LLM provider key (dashboard, one time)
+
+Anything that runs AI needs an LLM key on your account, added under
+**Profile → API & Model Configuration** in the dashboard (there is no API for
+this). Agent execution uses your configured provider's key; the **knowledge
+graph requires an OpenAI key** specifically (extraction + embeddings). LLM
+usage bills to your own provider account (BYOK) — separately from platform
+credits, which are deducted per API request (see
+[Authentication & scopes](authentication.md#credits)).
+
 ## 2. Install
 
 ```bash

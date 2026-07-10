@@ -17,5 +17,11 @@ const { result } = await m2f.agents.execute(agent.id, { input: 'Hello!' });
 
 Resources: `agents`, `crews`, `devices`, `tools`, `scheduledTasks`, `knowledge` (GraphOS temporal knowledge graph), `account`.
 
-Requires Node 18+ (uses built-in `fetch`). Full docs:
-https://github.com/pablocruzpineda/m2f-agents-sdk
+Requires Node 18+ (uses built-in `fetch`).
+
+**Prerequisites** (one-time, in the [dashboard](https://app.mind2flow.io)): create a
+REST API key (Developers → API) and add your LLM provider key (Profile → API &
+Model Configuration — the knowledge graph needs an OpenAI key). API usage
+deducts platform credits per request; LLM usage bills to your own key (BYOK).
+
+Full docs: https://github.com/pablocruzpineda/m2f-agents-sdk
