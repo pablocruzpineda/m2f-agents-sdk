@@ -293,6 +293,8 @@ export interface KnowledgeManualEntry {
   error?: string | null;
   /** Who declared the fact: a user in the dashboard or an agent with write access. */
   origin?: 'user' | 'agent';
+  /** Id of the agent that wrote it (when origin is "agent"). */
+  origin_agent_id?: string | null;
   created_at: string;
 }
 
