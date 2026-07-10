@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Command } from 'commander';
 import { registerAuthCommands } from './commands/auth';
 import { registerAgentCommands } from './commands/agents';
@@ -11,10 +13,14 @@ import { registerKnowledgeCommands } from './commands/knowledge';
 
 const program = new Command();
 
+const { version } = JSON.parse(
+  readFileSync(join(__dirname, '..', 'package.json'), 'utf8')
+) as { version: string };
+
 program
   .name('m2f')
   .description('Mind2Flow CLI — build, manage and run AI agents from your terminal')
-  .version('0.1.0');
+  .version(version);
 
 registerAuthCommands(program);
 registerAgentCommands(program);

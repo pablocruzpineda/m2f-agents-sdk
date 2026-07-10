@@ -291,6 +291,8 @@ export interface KnowledgeManualEntry {
   valid_until?: string | null;
   status: 'processing' | 'scheduled' | 'active' | 'expired' | 'failed';
   error?: string | null;
+  /** Who declared the fact: a user in the dashboard or an agent with write access. */
+  origin?: 'user' | 'agent';
   created_at: string;
 }
 

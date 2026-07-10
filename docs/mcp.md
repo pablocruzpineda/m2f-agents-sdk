@@ -1,8 +1,8 @@
 # MCP server — use your agents from Cursor & Claude
 
-Mind2Flow also exposes an **MCP (Model Context Protocol) server** with 80
+Mind2Flow also exposes an **MCP (Model Context Protocol) server** with 87
 tools covering agents, crews, devices, custom tools, tenant management,
-scheduled tasks and project management. This lets AI coding assistants
+scheduled tasks, project management and the GraphOS knowledge graph. This lets AI coding assistants
 (Cursor, Claude Code, Claude Desktop, Lovable, …) operate your Mind2Flow
 account directly.
 
@@ -58,5 +58,6 @@ Any MCP client that supports SSE transport works:
 | Tool Creation | 8 | `tools:*` |
 | Crews | 10 | `crews:*` |
 | Project Management | 19 | — |
+| Knowledge Graph (GraphOS) | 7 | `knowledge:*` |
 
 The authoritative list is whatever `tools/list` returns from your server.
