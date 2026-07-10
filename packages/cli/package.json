@@ -1,6 +1,6 @@
 {
   "name": "@mind2flow/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Command-line interface for the Mind2Flow AI agents platform",
   "keywords": ["ai", "agents", "mind2flow", "cli"],
   "license": "MIT",
@@ -25,7 +25,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@mind2flow/agents-sdk": "^0.2.0",
+    "@mind2flow/agents-sdk": "^0.2.1",
     "commander": "^12.0.0"
   },
   "devDependencies": {
