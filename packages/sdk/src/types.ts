@@ -352,6 +352,13 @@ export interface KnowledgeUsage {
   };
   monthly: Array<{ period: string; queries: number; episodes: number; estimated_cost_usd?: number }>;
   limits: { monthly_episode_limit: number | null; remaining_this_month: number | null };
+  /** Present when the account runs on the platform trial key (no own OpenAI key). */
+  trial?: {
+    active: boolean;
+    episodes_included: number;
+    episodes_used_total: number;
+    remaining: number;
+  } | null;
 }
 
 export interface KnowledgeSourceCreateParams {

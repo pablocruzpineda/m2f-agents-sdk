@@ -9,8 +9,10 @@ programmatically: ingest, query, and manage knowledge from code or CI.
 
 - Your API key needs the `knowledge:read` scope (queries, browsing) and/or
   `knowledge:write` (sources, ingestion, manual facts).
-- The account must have its own **OpenAI API key** configured in the dashboard
-  (Settings → API Keys). Extraction and search bill to it (BYOK). Check with:
+- The account needs its own **OpenAI API key** configured in the dashboard
+  (Profile → API Configuration) — extraction and search bill to it (BYOK).
+  New accounts get a **50-episode trial allowance** on the platform's key
+  first (lifetime, not monthly). Check with:
 
 ```ts
 const { hasKey } = await m2f.knowledge.keyStatus();

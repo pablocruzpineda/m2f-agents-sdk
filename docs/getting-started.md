@@ -10,13 +10,17 @@
 
 ## 1b. Add your LLM provider key (dashboard, one time)
 
-Anything that runs AI needs an LLM key on your account, added under
-**Profile → API & Model Configuration** in the dashboard (there is no API for
-this). Agent execution uses your configured provider's key; the **knowledge
-graph requires an OpenAI key** specifically (extraction + embeddings). LLM
-usage bills to your own provider account (BYOK) — separately from platform
-credits, which are deducted per API request (see
-[Authentication & scopes](authentication.md#credits)).
+New accounts include a trial: **50 free credits** and a **50-episode
+knowledge allowance** run on the platform's AI keys, so your first agent and
+first ingestion work with no key configured. Beyond that, anything that runs
+AI needs an LLM key on your account, added under **Profile → API & Model
+Configuration** in the dashboard (there is no API for this). Agent execution
+uses your configured provider's key; the **knowledge graph requires an OpenAI
+key** specifically (extraction + embeddings). LLM usage bills to your own
+provider account (BYOK) — separately from platform credits, which are
+deducted per API request (see
+[Authentication & scopes](authentication.md#credits)). Topping up credits
+after the trial does not re-enable the platform keys — bring your own.
 
 ## 2. Install
 

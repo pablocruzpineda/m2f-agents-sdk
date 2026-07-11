@@ -27,7 +27,9 @@ Both cover the full platform surface: **AI agents, multi-agent crews, devices (W
 Two one-time steps in the [dashboard](https://app.mind2flow.io) before the SDK/CLI work — neither can be done via the API:
 
 1. **Create a REST API key** under **Developers → API** (details below). This authenticates every SDK/CLI call.
-2. **Add your LLM provider key** under **Profile → API & Model Configuration** — required for anything that runs AI: agent execution uses your configured provider's key, and the **knowledge graph specifically requires an OpenAI key** (extraction + embeddings). Verify from code with `m2f.knowledge.keyStatus()`.
+2. **Add your LLM provider key** under **Profile → API & Model Configuration** — needed beyond the trial: agent execution uses your configured provider's key, and the **knowledge graph specifically requires an OpenAI key** (extraction + embeddings). Verify from code with `m2f.knowledge.keyStatus()`.
+
+**Trial included**: new accounts start with **50 free credits** and a **50-episode knowledge allowance** running on the platform's AI keys — so your first agents and first knowledge ingestion work before you configure any LLM key. Once the trial is consumed, both require your own key (topping up credits alone is not enough).
 
 After that, everything in this repo works from your terminal or IDE.
 
