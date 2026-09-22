@@ -16,6 +16,7 @@ Both cover the full platform surface: **AI agents, multi-agent crews, devices (W
 - [SDK](#sdk)
 - [CLI](#cli)
 - [CLI command reference](#cli-command-reference)
+- [Analysing your agents](#analysing-your-agents)
 - [Knowledge graph (GraphOS)](#knowledge-graph-graphos)
 - [Using the CLI from AI coding assistants](#using-the-cli-from-ai-coding-assistants)
 - [MCP server](#mcp-server)
@@ -145,6 +146,18 @@ m2f agents activities <agentId> [--limit <n>] [--json]
 m2f agents assign-device <agentId> <deviceId>     (and unassign-device)
 m2f agents delete <agentId> [--yes]
 
+m2f agents summary <agentId> [--from <date>] [--to <date>] [--bucket day|week|month] [--json]
+m2f agents conversations <agentId> [--from <date>] [--to <date>] [--limit <n>]
+                                   [--session-ids <a,b>] [--contact <name|phone>] [--full] [--json]
+m2f agents search <agentId> <term1,term2> [--role customer|agent|any] [--from <date>] [--to <date>] [--json]
+m2f agents analyze <agentId> "<question>" --field name:description [--field ...]
+                                          [--max <n>] [--json]
+m2f agents integrations <agentId> [--json]
+m2f agents channels <agentId> [--json]
+
+m2f org summary [--agent <agentId>] [--from <date>] [--to <date>] [--bucket <b>] [--json]
+m2f org activities [--agent <agentId>] [--limit <n>] [--json]
+
 m2f crews list|get|create|delete [--json]
 m2f crews run <crewId> --input <text> [--input-file <file>]
 m2f crews executions <crewId> [--limit <n>]
@@ -182,6 +195,73 @@ m2f mcp claude-command [--mcp-key <mcp_...>] [--url <url>]          # prints the
 ```
 
 Every command and subcommand also answers `--help`.
+
+## Analysing your agents
+
+Four things you could not do before: measure what an agent did, read what people
+actually said, find the conversations that matter, and check that the agent's
+wiring still works.
+
+**The figures are exact. The analysis is not.** `summary` is computed from the
+database; `analyze` reads transcripts with a language model and can be wrong or
+miss things. Keep the two apart when you report them.
+
+Every response carries a `notes` array, and it is the part people skip. It says
+when messages could not be attributed to a person, when only a subset was
+analysed, or when a check did not run. A count without its caveat is the one
+that ends up in a slide.
+
+```ts
+// How did it do last month, week by week?
+const s = await client.agents.summary(agentId, { from: '2026-08-01', bucket: 'week' });
+console.log(s.totals.incoming, s.people.distinct, s.responseTimeMs?.p50);
+s.notes.forEach((n) => console.warn(n));
+
+// Which conversations mention these products? Several terms, one call.
+// Searches only what CUSTOMERS wrote by default (`role: 'agent' | 'any'` to
+// change it), so the agent saying "we only carry drills" does not count as
+// someone asking for a drill. Matching is ACCENT-SENSITIVE: pass both spellings.
+const hits = await client.agents.searchConversations(agentId, {
+  terms: ['berberina', 'espirulina', 'cúrcuma', 'curcuma'],
+});
+// `matches.length` is the de-duplicated conversation count; per-term counts
+// double-count a conversation that matched two terms.
+
+// A specific customer's conversation, by name or phone. Names are not in the
+// message text, so search cannot find a person: use `contact`.
+const rosa = await client.agents.conversations(agentId, { contact: 'Rosa Vega' });
+
+// Read only what matched, whole threads, never cut mid-conversation.
+const threads = await client.agents.conversations(agentId, {
+  sessionIds: hits.terms[0].sessionIds,
+});
+
+// Ask anything. You supply the question AND the shape of the answer.
+const analysis = await client.agents.analyzeConversations(agentId, {
+  question: 'What did the customer want, and did it end in a sale?',
+  fields: [
+    { name: 'products', description: 'each product asked for by name' },
+    { name: 'outcome', description: 'quoted, bought, or only asked' },
+  ],
+  maxConversations: 40,
+});
+console.log(analysis.aggregates.products); // value → conversations, a frequency table
+
+// Why is it not saving to Sheets? Why did it stop answering?
+// `issues` holds real problems; `notes` holds caveats about the checks
+// themselves (Composio unreachable, live WhatsApp probe could not run).
+const apps = await client.agents.integrations(agentId);
+const channels = await client.agents.channels(agentId);   // WhatsApp checked live
+```
+
+`analyzeConversations` is the only call here that **spends money**. It runs an
+LLM on your own account's key — or the trial key while that is active — and
+fails with 402 rather than billing anyone else. Narrow with `searchConversations`
+first and keep `maxConversations` to what the question needs.
+
+Organization-wide reporting (`client.organization`) needs the TENANT or ADMIN
+role. The role is checked against the database, not against your key's scopes,
+and every row is confined to your own customer.
 
 ## Knowledge graph (GraphOS)
 

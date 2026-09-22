@@ -9,3 +9,4 @@ export { ToolsResource } from './resources/tools';
 export { ScheduledTasksResource } from './resources/scheduledTasks';
 export { AccountResource } from './resources/account';
 export { KnowledgeResource } from './resources/knowledge';
+export { OrganizationResource } from './resources/organization';

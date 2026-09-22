@@ -13,7 +13,18 @@ m2f tools push ./tool.py --description "What it does"
 m2f tasks create --agent-id <id> --name daily --cron "0 8 * * *" --message "Go!"
 m2f knowledge query "What changed in our prices this year?"
 m2f mcp setup --mcp-key mcp_xxx        # wire Mind2Flow into Cursor
+
+# Analyse your agents (new in 0.3.0)
+m2f agents summary <agentId> --bucket week          # exact figures, from the database
+m2f agents search <agentId> "drill,paint"           # customers' messages by default
+m2f agents conversations <agentId> --full           # whole threads
+m2f agents analyze <agentId> "Did it end in a sale?" --field outcome:"bought, quoted or only asked"
+m2f agents integrations <agentId>                   # connected apps, and whether they work
+m2f agents channels <agentId>                       # WhatsApp checked live, endpoint, shared link
+m2f org summary --bucket month                      # TENANT/ADMIN only
 ```
+
+`analyze` runs an LLM on your own key and costs tokens; the others only read.
 
 Configuration lives in `~/.m2f/config.json`; `M2F_API_KEY` / `M2F_BASE_URL`
 environment variables override it.

@@ -10,6 +10,7 @@ import { registerToolCommands } from './commands/tools';
 import { registerTaskCommands } from './commands/tasks';
 import { registerMcpCommands } from './commands/mcp';
 import { registerKnowledgeCommands } from './commands/knowledge';
+import { registerOrganizationCommands } from './commands/organization';
 
 const program = new Command();
 
@@ -30,5 +31,6 @@ registerToolCommands(program);
 registerTaskCommands(program);
 registerMcpCommands(program);
 registerKnowledgeCommands(program);
+registerOrganizationCommands(program);
 
 program.parseAsync(process.argv);

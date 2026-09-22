@@ -53,6 +53,10 @@
       "description": "Identity and credit balance"
     },
     {
+      "name": "Analysis",
+      "description": "Operational figures, conversation reading and search, LLM analysis and configuration diagnostics for your agents. Scope: agents:read. Organization-wide reads additionally require the TENANT or ADMIN role and are confined to your own customer."
+    },
+    {
       "name": "Knowledge",
       "description": "GraphOS temporal knowledge graph: sources, ingestion, hybrid query and graph exploration. Scopes: knowledge:read / knowledge:write. Requires an OpenAI key on the account (BYOK) for ingestion and query."
     }
@@ -742,6 +746,1226 @@
           },
           "403": {
             "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{agentId}/summary": {
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Aggregated operational figures for an agent",
+        "operationId": "getAgentSummary",
+        "description": "Volume, distinct people, conversation depth, hour-of-day distribution (UTC), channels, response-time percentiles and errors, over a date range. Computed from the database, so these figures are exact. Read `notes` back to whoever sees the numbers: it reports when people could not be counted (activities recorded before sender tracking shipped carry no sender id), when messages came from the agent's own scheduled tasks, and when the range held more rows than were read.",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent id, or \"all\" for every agent you own"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start of the range, ISO 8601. Defaults to 30 days before `to`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End of the range, ISO 8601. Defaults to now.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "description": "Granularity of the returned time series.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "default": "day"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/OperationSummary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found for this account (agentId must be an id from GET /agents, not a name)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{agentId}/conversations": {
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Read whole conversations",
+        "operationId": "getAgentConversations",
+        "description": "Complete threads, newest first, paged BY CONVERSATION rather than by message, so a page never cuts a thread in half. Pass `sessionIds` to read exactly the threads a search just found. Responses are capped by a character budget; `notes` says when something was cut.",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent id, or \"all\" for every agent you own"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start of the range, ISO 8601. Defaults to 30 days before `to`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End of the range, ISO 8601. Defaults to now.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Conversations per page (default 10, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Conversations to skip.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "maxCharsPerConversation",
+            "in": "query",
+            "required": false,
+            "description": "Character budget per thread (default 4000, max 20000).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sessionIds",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated session ids to read instead of the newest threads. Empty is ignored (and said so in `notes`); if a search found nothing, there is nothing to read.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "contact",
+            "in": "query",
+            "required": false,
+            "description": "Read a specific customer's conversation by name or phone (case- and accent-insensitive). Names are not message text, so search cannot find them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeScheduledTasks",
+            "in": "query",
+            "required": false,
+            "description": "Include the agent's own scheduled runs, which are not people.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/ConversationsResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found for this account (agentId must be an id from GET /agents, not a name)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{agentId}/conversations/search": {
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Find which conversations mention given terms",
+        "operationId": "searchAgentConversations",
+        "description": "Per term: how many DISTINCT CONVERSATIONS and how many messages matched, plus the session ids. Per matching conversation: which terms hit, with snippets. Several terms in one call, because \"how many people asked for each of these ten products\" is one question. Matching is literal substring: case-insensitive but ACCENT-SENSITIVE, so \"credito\" does not match \"crédito\" — pass both spellings as separate terms. Per-term counts double-count a conversation that matched two terms; use `matches.length` for the de-duplicated number.",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent id, or \"all\" for every agent you own"
+          },
+          {
+            "name": "terms",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated terms to look for, up to 20.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start of the range, ISO 8601. Defaults to 30 days before `to`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End of the range, ISO 8601. Defaults to now.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum conversations listed (default 50, max 200).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "includeScheduledTasks",
+            "in": "query",
+            "required": false,
+            "description": "Include the agent's own scheduled runs.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "description": "Whose messages to search. Default \"customer\": for demand questions the agent mentioning a term must not count as someone asking for it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "customer",
+                "agent",
+                "any"
+              ],
+              "default": "customer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/ConversationSearchResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found for this account (agentId must be an id from GET /agents, not a name)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{agentId}/conversations/analyze": {
+      "post": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Ask an arbitrary question of an agent's conversations",
+        "operationId": "analyzeAgentConversations",
+        "description": "You supply the question AND the fields you want back, so \"which products did people ask for\", \"did this end in a sale\" and \"what went wrong\" are all this one endpoint. Conversations are read in batches, so a month that would never fit in one context window is a handful of passes. Returns a value per conversation plus a frequency table per field.\n\nCOST: this is the only endpoint here that spends. It runs an LLM on YOUR account's own key (or the trial key while that is active) and answers 402 when the account has neither — it is never billed to anyone else. Keep `maxConversations` to what the question needs.\n\nValues are extracted by a model reading text, so they can be wrong or missed. Hard figures belong to /summary, which is computed from the database.",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent id, or \"all\" for every agent you own"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "question",
+                  "fields"
+                ],
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "description": "What to determine about each conversation, in plain language."
+                  },
+                  "fields": {
+                    "type": "array",
+                    "description": "The values you want back per conversation, up to 8. Each becomes a column and a frequency table.",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "description"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "Short identifier, e.g. \"products\"."
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "What to put in it."
+                        }
+                      }
+                    }
+                  },
+                  "from": {
+                    "type": "string",
+                    "description": "Start of the range, ISO 8601."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "End of the range, ISO 8601."
+                  },
+                  "sessionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Analyse exactly these conversations."
+                  },
+                  "maxConversations": {
+                    "type": "integer",
+                    "description": "Ceiling on conversations read (default 40, max 200)."
+                  },
+                  "includeScheduledTasks": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/ConversationAnalysis"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No LLM key available on this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{agentId}/integrations": {
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Connected apps, and whether the wiring works",
+        "operationId": "getAgentIntegrations",
+        "description": "The Composio toolkits the agent is configured to use, the account pinned per app, how many actions are selected, the account's live connections, and `issues` — where configuration and reality disagree (pinned to an account that no longer exists, connected but not ACTIVE, apps with no actions selected). When Composio cannot be reached, `connections` is null and `notes` says the check did not run. That is not the same as \"disconnected\". `issues` holds real problems only.",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Integrations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/AgentIntegrations"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{agentId}/channels": {
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "How the agent can be reached, and whether each way works",
+        "operationId": "getAgentChannels",
+        "description": "Input and output channel, the API endpoint, the assigned WhatsApp device with its number and the date of the last inbound message, and the shared link with its active flag, expiry and request count. `issues` lists what is broken.\n\nWhatsApp is probed LIVE: `whatsapp.liveState` is \"open\" when connected. When the probe cannot run, `liveCheck` is \"failed\" and `notes` says so; the stored `isConnectedFlag` can be stale, so weigh it against `lastInboundAt`.",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/AgentChannels"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organization/summary": {
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Aggregated figures across your organization",
+        "operationId": "getOrganizationSummary",
+        "description": "The same figures as /agents/{agentId}/summary, across every agent in your organization. TENANT and ADMIN only — the role is read from the database, not from the key — and confined to your own customer: an agent belonging to another customer yields an empty summary rather than someone else's data.",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "query",
+            "required": false,
+            "description": "A specific agent within the organization, or \"all\".",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start of the range, ISO 8601. Defaults to 30 days before `to`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End of the range, ISO 8601. Defaults to now.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "description": "Granularity of the time series.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "default": "day"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/OperationSummary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "TENANT or ADMIN role required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organization/activities": {
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Raw activity rows across your organization",
+        "operationId": "getOrganizationActivities",
+        "description": "Message contents included. Prefer /organization/summary for reporting and reach for this only when the actual conversations are needed. These rows carry end customers' conversations and, on WhatsApp, their names and phone numbers. TENANT and ADMIN only, confined to your own customer.",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "query",
+            "required": false,
+            "description": "A specific agent within the organization, or \"all\".",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            },
+            "description": "Max items to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Items to skip"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "activities": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "pagination": {
+                          "$ref": "#/components/schemas/Pagination"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "TENANT or ADMIN role required",
             "content": {
               "application/json": {
                 "schema": {
@@ -7388,6 +8612,776 @@
       }
     },
     "schemas": {
+      "OperationSummary": {
+        "type": "object",
+        "description": "Exact figures computed from the database. `notes` carries the caveats that must travel with them.",
+        "properties": {
+          "agentId": {
+            "type": "string"
+          },
+          "agentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The agent these results belong to; null for \"all\"."
+          },
+          "range": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "to": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "days": {
+                "type": "integer"
+              }
+            }
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "messages": {
+                "type": "integer",
+                "description": "Incoming plus successful replies. Failed replies are in `errors`."
+              },
+              "incoming": {
+                "type": "integer"
+              },
+              "outgoing": {
+                "type": "integer",
+                "description": "Successful replies only."
+              },
+              "errors": {
+                "type": "integer"
+              },
+              "scheduledRuns": {
+                "type": "integer",
+                "description": "Incoming messages fired by the agent's own scheduled tasks, not by a person."
+              }
+            }
+          },
+          "people": {
+            "type": "object",
+            "properties": {
+              "distinct": {
+                "type": "integer"
+              },
+              "avgMessagesPerPerson": {
+                "type": "number",
+                "nullable": true
+              },
+              "unattributedMessages": {
+                "type": "integer",
+                "description": "Messages with no sender id; see `notes`."
+              },
+              "top": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "contact": {
+                      "type": "string"
+                    },
+                    "messages": {
+                      "type": "integer"
+                    },
+                    "firstAt": {
+                      "type": "string"
+                    },
+                    "lastAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "bucket": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "incoming": {
+                  "type": "integer"
+                },
+                "outgoing": {
+                  "type": "integer"
+                },
+                "people": {
+                  "type": "integer"
+                },
+                "responseMs": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "avg": {
+                      "type": "integer"
+                    },
+                    "p50": {
+                      "type": "integer"
+                    },
+                    "samples": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "depth": {
+            "type": "object",
+            "description": "Agent replies per person, as the raw histogram.",
+            "properties": {
+              "noReplyPeople": {
+                "type": "integer"
+              },
+              "perPerson": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "avg": {
+                    "type": "number"
+                  },
+                  "p50": {
+                    "type": "integer"
+                  },
+                  "p75": {
+                    "type": "integer"
+                  },
+                  "p90": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "histogram": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "replies": {
+                      "type": "integer"
+                    },
+                    "people": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "perHour": {
+            "type": "array",
+            "description": "Hour of day in UTC.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "hour": {
+                  "type": "integer"
+                },
+                "incoming": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "channel": {
+                  "type": "string"
+                },
+                "messages": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "responseTimeMs": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "avg": {
+                "type": "integer"
+              },
+              "p50": {
+                "type": "integer"
+              },
+              "p95": {
+                "type": "integer"
+              },
+              "samples": {
+                "type": "integer"
+              }
+            }
+          },
+          "errors": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "samples": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "contact": {
+            "type": "string"
+          },
+          "isScheduledTask": {
+            "type": "boolean"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "customer",
+                    "agent"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "messageCount": {
+            "type": "integer"
+          },
+          "firstAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Cut to fit the budget: the opening and the ending are kept."
+          },
+          "omittedMessages": {
+            "type": "integer",
+            "description": "Messages left out of the middle when truncated."
+          }
+        }
+      },
+      "ConversationsResult": {
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "string"
+          },
+          "agentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The agent these results belong to; null for \"all\"."
+          },
+          "range": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            }
+          },
+          "conversations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Conversation"
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "limit": {
+                "type": "integer"
+              },
+              "offset": {
+                "type": "integer"
+              },
+              "hasMore": {
+                "type": "boolean"
+              }
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ConversationSearchResult": {
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "string"
+          },
+          "agentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The agent these results belong to; null for \"all\"."
+          },
+          "range": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            }
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "customer",
+              "agent",
+              "any"
+            ],
+            "description": "Whose messages were searched."
+          },
+          "terms": {
+            "type": "array",
+            "description": "Per term. A conversation matching two terms is counted in both.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "conversations": {
+                  "type": "integer"
+                },
+                "messages": {
+                  "type": "integer"
+                },
+                "sessionIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "matches": {
+            "type": "array",
+            "description": "De-duplicated: every conversation that matched at least one term.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sessionId": {
+                  "type": "string"
+                },
+                "contact": {
+                  "type": "string"
+                },
+                "isScheduledTask": {
+                  "type": "boolean"
+                },
+                "terms": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "messages": {
+                  "type": "integer"
+                },
+                "lastAt": {
+                  "type": "string"
+                },
+                "snippets": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ConversationAnalysis": {
+        "type": "object",
+        "description": "Values extracted by a language model: they can be wrong or missed.",
+        "properties": {
+          "agentId": {
+            "type": "string"
+          },
+          "agentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The agent these results belong to; null for \"all\"."
+          },
+          "range": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            }
+          },
+          "question": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "analyzed": {
+            "type": "integer"
+          },
+          "totalInRange": {
+            "type": "integer"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sessionId": {
+                  "type": "string"
+                },
+                "contact": {
+                  "type": "string"
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "aggregates": {
+            "type": "object",
+            "description": "Per field: value → how many distinct conversations gave it.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  },
+                  "conversations": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgentIntegrations": {
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "string"
+          },
+          "agentName": {
+            "type": "string"
+          },
+          "toolkits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pinned": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "toolkit": {
+                  "type": "string"
+                },
+                "connectedAccountId": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "hasServer": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "selectedActions": {
+            "type": "integer"
+          },
+          "connections": {
+            "type": "array",
+            "nullable": true,
+            "description": "Null when Composio could not be reached — not the same as disconnected.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "toolkit": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "perToolkit": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "toolkit": {
+                  "type": "string"
+                },
+                "pinnedAccountId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "connectionStatus": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "ok": {
+                  "type": "boolean",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Real problems."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Caveats about the checks themselves."
+          }
+        }
+      },
+      "AgentChannels": {
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "string"
+          },
+          "agentName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "nullable": true
+              },
+              "endpointUrl": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "output": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "nullable": true
+              },
+              "target": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "whatsapp": {
+            "type": "object",
+            "properties": {
+              "assigned": {
+                "type": "boolean"
+              },
+              "deviceId": {
+                "type": "string",
+                "nullable": true
+              },
+              "deviceName": {
+                "type": "string",
+                "nullable": true
+              },
+              "isConnectedFlag": {
+                "type": "boolean",
+                "nullable": true,
+                "description": "Stored flag; can be stale. Prefer `liveState`."
+              },
+              "liveState": {
+                "type": "string",
+                "nullable": true,
+                "description": "Live state from the connection server: \"open\" is connected, \"not_found\" means the instance no longer exists (number not linked). Null when the probe did not run."
+              },
+              "liveCheck": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "failed",
+                  "skipped"
+                ]
+              },
+              "phoneNumber": {
+                "type": "string",
+                "nullable": true
+              },
+              "sessionId": {
+                "type": "string",
+                "nullable": true
+              },
+              "lastInboundAt": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "sharedLink": {
+            "type": "object",
+            "properties": {
+              "exists": {
+                "type": "boolean"
+              },
+              "isActive": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "expiresAt": {
+                "type": "string",
+                "nullable": true
+              },
+              "expired": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "requestCount": {
+                "type": "integer",
+                "nullable": true
+              },
+              "maxRequests": {
+                "type": "integer",
+                "nullable": true
+              }
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Real problems."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Caveats about the checks themselves."
+          }
+        }
+      },
       "Pagination": {
         "type": "object",
         "properties": {
