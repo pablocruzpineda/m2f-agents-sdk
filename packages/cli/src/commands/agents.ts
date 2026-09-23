@@ -382,4 +382,79 @@ export function registerAgentCommands(program: Command): void {
         fail(error);
       }
     });
+
+  agents
+    .command('actions <agentId>')
+    .description("What the agent's app actions actually did: calls, errors and ids, per action")
+    .option('--from <date>', 'Start of the range, ISO 8601')
+    .option('--to <date>', 'End of the range, ISO 8601')
+    .option('--tool <text>', 'Only actions whose name contains this text')
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, opts: { from?: string; to?: string; tool?: string; json?: boolean }) => {
+      try {
+        const r = await getClient().agents.actions(agentId, { from: opts.from, to: opts.to, tool: opts.tool });
+        if (opts.json) return printJson(r);
+        console.log(`${r.agentName}: ${r.totals.calls} calls, ${r.totals.errors} errors, in ${r.totals.messagesWithActions} replies`);
+        printTable(
+          r.tools.map((t) => ({
+            action: t.tool,
+            server: t.server,
+            calls: t.calls,
+            errors: t.errors,
+            'error %': t.errorRate,
+            'top error': (t.topErrors[0]?.error ?? '').slice(0, 50),
+          })),
+          ['action', 'server', 'calls', 'errors', 'error %', 'top error']
+        );
+        printNotes(r.notes);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  agents
+    .command('test <agentId>')
+    .description('Play test conversations against the agent, FOR REAL (its apps run). Cases from a JSON file')
+    .requiredOption('--cases <file>', 'JSON file: [{ "name", "turns": ["..."], "expected" }] (max 15)')
+    .option('--name <name>', 'Test identity name ({{name}} in turns)')
+    .option('--email <email>', 'Test identity email ({{email}} in turns)')
+    .option('--phone <phone>', 'Test identity phone ({{phone}} in turns)')
+    .option('--wait', 'Wait for the run to finish and print the results')
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, opts: { cases: string; name?: string; email?: string; phone?: string; wait?: boolean; json?: boolean }) => {
+      try {
+        const cases = JSON.parse(fs.readFileSync(opts.cases, 'utf8'));
+        const client = getClient();
+        const started = await client.agents.runTests(agentId, {
+          cases: Array.isArray(cases) ? cases : cases.cases,
+          identity: { name: opts.name, email: opts.email, phone: opts.phone },
+        });
+        if (!opts.wait) {
+          if (opts.json) return printJson(started);
+          console.log(`Test run started: ${started.cases} cases. Artifact ${started.artifactId}`);
+          console.log(`Follow it with: m2f artifacts get ${started.artifactId}`);
+          return;
+        }
+        let artifact = await client.artifacts.get(started.artifactId);
+        while (artifact.status === 'running') {
+          await new Promise((r) => setTimeout(r, 4000));
+          artifact = await client.artifacts.get(started.artifactId);
+        }
+        if (opts.json) return printJson(artifact);
+        const block = artifact.blocks.find((b) => b.type === 'test_results');
+        const results = block && block.type === 'test_results' ? block.cases : [];
+        printTable(
+          results.map((c) => ({
+            verdict: c.verdict,
+            case: c.name.slice(0, 40),
+            actions: (c.actions ?? []).map((a) => `${a.tool}${a.ok ? '' : ' ✗'}`).join(', ').slice(0, 50),
+            reason: (c.reason ?? '').slice(0, 60),
+          })),
+          ['verdict', 'case', 'actions', 'reason']
+        );
+        console.log(`\nStatus: ${artifact.status}. Full results: m2f artifacts get ${artifact.id}`);
+      } catch (error) {
+        fail(error);
+      }
+    });
 }

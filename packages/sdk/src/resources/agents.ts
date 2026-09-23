@@ -1,6 +1,8 @@
 import type { HttpClient } from '../http';
 import type {
   Agent,
+  AgentActions,
+  AgentActionsParams,
   AgentActivity,
   AgentChannels,
   AgentCreateParams,
@@ -17,6 +19,8 @@ import type {
   OperationSummary,
   Pagination,
   SummaryParams,
+  TestRunParams,
+  TestRunStarted,
 } from '../types';
 
 export class AgentsResource {
@@ -212,6 +216,30 @@ export class AgentsResource {
    */
   async channels(agentId: string): Promise<AgentChannels> {
     const res = await this.http.get<AgentChannels>(`/agents/${agentId}/channels`);
+    return res.payload!;
+  }
+
+  /**
+   * What the agent's app actions actually did: every tool call with the app's
+   * real answer (ok or the error, the ids created), aggregated per action.
+   * "ok" means the app accepted the call. Recorded from `loggingSince` on —
+   * no record is not the same as no errors; read `notes`.
+   */
+  async actions(agentId: string, options: AgentActionsParams = {}): Promise<AgentActions> {
+    const res = await this.http.get<AgentActions>(`/agents/${agentId}/actions`, {
+      query: { from: options.from, to: options.to, tool: options.tool },
+    });
+    return res.payload!;
+  }
+
+  /**
+   * Play test conversations against the agent, for real: on a temporary copy
+   * (no channel receives the replies), but its connected apps DO run. Returns
+   * at once; the results fill in the `test_run` artifact — poll
+   * `client.artifacts.get(artifactId)` until `status` is "done".
+   */
+  async runTests(agentId: string, params: TestRunParams): Promise<TestRunStarted> {
+    const res = await this.http.post<TestRunStarted>(`/agents/${agentId}/test-runs`, params);
     return res.payload!;
   }
 }

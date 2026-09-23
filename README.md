@@ -263,6 +263,73 @@ Organization-wide reporting (`client.organization`) needs the TENANT or ADMIN
 role. The role is checked against the database, not against your key's scopes,
 and every row is confined to your own customer.
 
+### What the agent's apps actually did (new in 0.4.0)
+
+Every tool call an agent makes — create a contact in the CRM, add a row to a
+sheet, book an event, search its knowledge — is recorded with the app's real
+answer: ok or the error, and the ids it created.
+
+```ts
+const acts = await client.agents.actions(agentId, { from: '2026-09-01' });
+for (const t of acts.tools) console.log(t.tool, t.calls, t.errors, t.topErrors[0]?.error);
+acts.notes.forEach((n) => console.warn(n));
+```
+
+"ok" means the app's API accepted the call, not what the app did afterwards (a
+CRM workflow, say). Calls are recorded from the day logging was deployed —
+`loggingSince` says where the record starts, and no record is not the same as
+no errors.
+
+### Testing an agent, for real (new in 0.4.0)
+
+```ts
+const run = await client.agents.runTests(agentId, {
+  identity: { name: 'Prueba', email: 'me@mycompany.com' },
+  cases: [
+    { name: 'Books an appointment', turns: ['Hi, I am {{name}}, I want an appointment Tuesday at 10', 'my email is {{email}}'],
+      expected: 'Books Tuesday 10:00 in the calendar and confirms it' },
+  ],
+});
+// The results fill in an artifact, case by case.
+let a = await client.artifacts.get(run.artifactId);
+while (a.status === 'running') { await new Promise((r) => setTimeout(r, 4000)); a = await client.artifacts.get(run.artifactId); }
+```
+
+Nothing is simulated: each case runs on a temporary copy of the agent — its
+replies go to no channel and do not count in its figures — but **its connected
+apps run for real**. Use a test identity you control. Every app action is in the
+results with the ids it created, so they can be found and removed. A language
+model on your key grades each answer.
+
+### Artifacts: reports as documents (new in 0.4.0)
+
+Reports, test runs and prompt changes are **artifacts**: versioned documents
+built from typed blocks, whose figures the server resolves from the database —
+never numbers someone typed.
+
+```ts
+// The monthly operation report of an agent (default: last calendar month).
+const report = await client.artifacts.create({ template: 'operation_report', agentId, lang: 'en' });
+
+// Or your own: declare data sources, point blocks into them.
+const mine = await client.artifacts.create({
+  title: 'Weekly volume',
+  agentId,
+  sources: { s: { tool: 'operation_summary', args: { agentId, bucket: 'week' } } },
+  blocks: [
+    { type: 'kpis', items: [{ label: 'Messages', source: { ref: 's', path: 'totals.incoming' } }] },
+    { type: 'chart', kind: 'bar', x: 'bucket', y: ['incoming'], source: { ref: 's', path: 'series' } },
+  ],
+});
+
+await client.artifacts.refresh(mine.id);            // same blocks, fresh data, new version
+const { token } = await client.artifacts.share(mine.id); // <app>/a/<token>
+```
+
+A public link shows the latest version without signing in. Internal ids are
+always removed from it; end customers' names, phones and emails are replaced
+unless you pass `redact: false`.
+
 ## Knowledge graph (GraphOS)
 
 GraphOS is the account's **temporal knowledge graph**: feed it documents and data sources, it extracts entities and facts (each with validity in time), and your agents query it automatically at runtime. The SDK/CLI expose the same capabilities programmatically.

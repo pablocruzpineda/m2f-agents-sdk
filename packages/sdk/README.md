@@ -15,7 +15,7 @@ const agent = await m2f.agents.create({ name: 'Bot', systemPrompt: '…' });
 const { result } = await m2f.agents.execute(agent.id, { input: 'Hello!' });
 ```
 
-Resources: `agents`, `crews`, `devices`, `tools`, `scheduledTasks`, `knowledge` (GraphOS temporal knowledge graph), `account`, `organization` (TENANT/ADMIN reporting).
+Resources: `agents`, `crews`, `devices`, `tools`, `scheduledTasks`, `knowledge` (GraphOS temporal knowledge graph), `account`, `organization` (TENANT/ADMIN reporting), `artifacts` (reports, test runs, prompt changes).
 
 ### Analyse your agents (new in 0.3.0)
 
@@ -42,6 +42,20 @@ await m2f.agents.channels(agentId);
 
 `summary` is exact; `analyzeConversations` reads text with a model and can be
 wrong — keep the two apart when you report them.
+
+### Actions, test runs and artifacts (new in 0.4.0)
+
+```ts
+// What its apps actually answered: calls, errors, ids created.
+await m2f.agents.actions(agentId);
+
+// Test conversations, played for real (its connected apps DO run).
+const run = await m2f.agents.runTests(agentId, { cases: [{ name: 'Price', turns: ['How much is the drill?'], expected: 'Quotes 1,890' }] });
+
+// Reports as versioned, shareable documents.
+const report = await m2f.artifacts.create({ template: 'operation_report', agentId });
+const { token } = await m2f.artifacts.share(report.id);
+```
 
 Requires Node 18+ (uses built-in `fetch`).
 

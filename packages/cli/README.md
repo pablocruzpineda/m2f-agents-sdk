@@ -22,9 +22,16 @@ m2f agents analyze <agentId> "Did it end in a sale?" --field outcome:"bought, qu
 m2f agents integrations <agentId>                   # connected apps, and whether they work
 m2f agents channels <agentId>                       # WhatsApp checked live, endpoint, shared link
 m2f org summary --bucket month                      # TENANT/ADMIN only
+
+# New in 0.4.0
+m2f agents actions <agentId>                         # what its apps actually answered
+m2f agents test <agentId> --cases cases.json --email me@x.com --wait   # runs FOR REAL
+m2f artifacts report <agentId> --from 2026-08-01 --to 2026-08-31      # operation report
+m2f artifacts list
+m2f artifacts share <id>                             # public link, customers hidden
 ```
 
-`analyze` runs an LLM on your own key and costs tokens; the others only read.
+`analyze`, `artifacts report` and `agents test` run an LLM on your own key and cost tokens; `agents test` also runs the agent's connected apps for real. The others only read.
 
 Configuration lives in `~/.m2f/config.json`; `M2F_API_KEY` / `M2F_BASE_URL`
 environment variables override it.

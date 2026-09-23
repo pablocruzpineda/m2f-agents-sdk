@@ -7,6 +7,7 @@ import { ScheduledTasksResource } from './resources/scheduledTasks';
 import { AccountResource } from './resources/account';
 import { KnowledgeResource } from './resources/knowledge';
 import { OrganizationResource } from './resources/organization';
+import { ArtifactsResource } from './resources/artifacts';
 
 export const DEFAULT_BASE_URL = 'https://api.mind2flow.io/api/v1';
 
@@ -44,6 +45,8 @@ export class M2FClient {
   readonly knowledge: KnowledgeResource;
   /** Organization-wide reads. TENANT or ADMIN only. */
   readonly organization: OrganizationResource;
+  /** Reports, test runs and prompt changes, as versioned, shareable documents. */
+  readonly artifacts: ArtifactsResource;
 
   constructor(options: M2FClientOptions) {
     if (!options.apiKey) {
@@ -65,6 +68,7 @@ export class M2FClient {
     this.scheduledTasks = new ScheduledTasksResource(http);
     this.account = new AccountResource(http);
     this.organization = new OrganizationResource(http);
+    this.artifacts = new ArtifactsResource(http);
     this.knowledge = new KnowledgeResource(http);
   }
 }

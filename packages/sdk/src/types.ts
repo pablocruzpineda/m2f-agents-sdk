@@ -608,3 +608,157 @@ export interface OrganizationSummaryParams extends SummaryParams {
   /** A specific agent within the organization, or "all". */
   agentId?: string;
 }
+
+// ─── Actions (what the agent's app calls actually did) ──────────────────
+
+export interface AgentActionTool {
+  tool: string;
+  /** composio | mcp | custom | image | unknown */
+  via: string;
+  server: string;
+  calls: number;
+  ok: number;
+  errors: number;
+  /** Percent. */
+  errorRate: number;
+  avgMs: number | null;
+  lastCallAt: string;
+  lastErrorAt: string | null;
+  topErrors: Array<{ error: string; count: number }>;
+  recentIds: Array<{ at: string; ids: Record<string, string> }>;
+}
+
+/**
+ * Every tool call the agent made, with the app's real answer. "ok" means the
+ * app's API accepted the call — not proof of what the app did afterwards.
+ * Recorded from `loggingSince` on; read `notes`.
+ */
+export interface AgentActions {
+  agentId: string;
+  agentName: string;
+  range: { from: string; to: string };
+  totals: { messagesWithActions: number; calls: number; ok: number; errors: number };
+  tools: AgentActionTool[];
+  recentErrors: Array<{ at: string; tool: string; error: string; sessionId: string | null }>;
+  loggingSince: string | null;
+  notes: string[];
+}
+
+export interface AgentActionsParams {
+  from?: string;
+  to?: string;
+  /** Only actions whose name contains this text. */
+  tool?: string;
+}
+
+// ─── Test runs ──────────────────────────────────────────────────────────
+
+export interface TestCaseSpec {
+  name: string;
+  /** What the test customer says, turn by turn (max 5). {{name}} {{phone}} {{email}} take `identity`. */
+  turns: string[];
+  /** What the agent should do or say, including the app action it should perform. */
+  expected: string;
+}
+
+export interface TestRunParams {
+  /** Up to 15. */
+  cases: TestCaseSpec[];
+  identity?: { name?: string; phone?: string; email?: string };
+}
+
+export interface TestRunStarted {
+  /** The `test_run` artifact the results fill in. Poll `artifacts.get()` until `status` is "done". */
+  artifactId: string;
+  cases: number;
+}
+
+// ─── Artifacts ──────────────────────────────────────────────────────────
+
+export type ArtifactKind = 'report' | 'operation_report' | 'test_run' | 'prompt_change' | (string & {});
+export type ArtifactStatus = 'ready' | 'running' | 'done' | 'interrupted' | 'failed' | 'archived' | (string & {});
+export type ArtifactFormat = 'number' | 'percent' | 'ms' | 'text' | 'date';
+export interface SourceRef { ref: string; path?: string }
+
+export type ArtifactBlock =
+  | { type: 'heading'; text: string; level?: 1 | 2 | 3 }
+  | { type: 'text'; markdown: string }
+  | { type: 'callout'; tone: 'info' | 'success' | 'warning' | 'error'; text: string }
+  | { type: 'kpis'; items: Array<{ label: string; value?: string | number; source?: SourceRef; format?: ArtifactFormat; hint?: string }> }
+  | { type: 'table'; title?: string; columns: Array<{ key: string; label: string; align?: 'left' | 'right' | 'center'; format?: ArtifactFormat }>; rows?: Array<Record<string, unknown>>; source?: SourceRef }
+  | { type: 'chart'; title?: string; kind: 'bar' | 'line' | 'area'; x: string; y: string[]; yLabels?: string[]; rows?: Array<Record<string, unknown>>; source?: SourceRef }
+  | { type: 'excerpt'; title?: string; contact?: string; messages: Array<{ role: 'customer' | 'agent'; content: string; at?: string }> }
+  | { type: 'test_results'; title?: string; cases: Array<{ name: string; input: string; expected: string; answer?: string; verdict: 'pass' | 'fail' | 'partial' | 'error' | 'pending'; reason?: string; actions?: Array<{ tool: string; ok: boolean; error?: string; ids?: Record<string, string> }>; secs?: number }> }
+  | { type: 'diff'; label?: string; before: string; after: string }
+  | { type: 'divider' };
+
+export type ArtifactSourceTool =
+  | 'operation_summary' | 'organization_summary' | 'actions' | 'search' | 'conversations'
+  | 'integrations' | 'channels' | 'analysis';
+
+export interface ArtifactSourceSpec {
+  tool: ArtifactSourceTool;
+  args?: Record<string, unknown>;
+}
+
+export interface ArtifactSummary {
+  id: string;
+  rootId: string | null;
+  version: number;
+  kind: ArtifactKind;
+  title: string;
+  status: ArtifactStatus;
+  agentId: string | null;
+  shared: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Artifact {
+  id: string;
+  rootId: string | null;
+  version: number;
+  isLatest: boolean;
+  kind: ArtifactKind;
+  title: string;
+  status: ArtifactStatus;
+  agentId: string | null;
+  blocks: ArtifactBlock[];
+  /** `sources`: each resolved source ({ ok, status, payload | message }); `sourceSpecs`: what was asked for. */
+  data: Record<string, unknown> | null;
+  shareToken: string | null;
+  shareRedact: boolean;
+  shareExpiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  versions?: Array<{ id: string; version: number; createdAt: string; isLatest: boolean }>;
+}
+
+export type ArtifactCreateParams =
+  | {
+      title: string;
+      blocks: ArtifactBlock[];
+      /** Resolved on the server as you; blocks point into them with `source: { ref, path }`. */
+      sources?: Record<string, ArtifactSourceSpec>;
+      kind?: ArtifactKind;
+      agentId?: string;
+      /** Make it a new version of this artifact. */
+      parentId?: string;
+    }
+  | {
+      /** A report the server composes. */
+      template: 'operation_report';
+      agentId: string;
+      /** Default: the previous calendar month. */
+      from?: string;
+      to?: string;
+      /** Default 'en'. */
+      lang?: 'en' | 'es';
+      title?: string;
+    };
+
+export interface ArtifactShare {
+  token: string;
+  redact: boolean;
+  expiresAt: string | null;
+}
