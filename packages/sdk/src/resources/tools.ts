@@ -1,10 +1,10 @@
-import type { HttpClient } from '../http';
+import type { HttpClient } from '../http.js';
 import type {
   CustomTool,
   CustomToolCreateParams,
   ExecutePythonParams,
   PythonExecution,
-} from '../types';
+} from '../types.js';
 
 export class ToolsResource {
   constructor(private readonly http: HttpClient) {}

@@ -1,5 +1,5 @@
-import type { HttpClient } from '../http';
-import type { AccountMe } from '../types';
+import type { HttpClient } from '../http.js';
+import type { AccountMe } from '../types.js';
 
 export class AccountResource {
   constructor(private readonly http: HttpClient) {}

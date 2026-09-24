@@ -1,5 +1,5 @@
-import type { HttpClient } from '../http';
-import type { Device, DeviceCreateParams } from '../types';
+import type { HttpClient } from '../http.js';
+import type { Device, DeviceCreateParams } from '../types.js';
 
 export class DevicesResource {
   constructor(private readonly http: HttpClient) {}

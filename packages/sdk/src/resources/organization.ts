@@ -1,10 +1,10 @@
-import type { HttpClient } from '../http';
+import type { HttpClient } from '../http.js';
 import type {
   AgentActivity,
   OperationSummary,
   OrganizationSummaryParams,
   Pagination,
-} from '../types';
+} from '../types.js';
 
 /**
  * Organization-wide reads, for tenants reporting across their own users.

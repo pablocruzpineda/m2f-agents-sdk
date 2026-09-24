@@ -1,9 +1,9 @@
-import type { HttpClient } from '../http';
+import type { HttpClient } from '../http.js';
 import type {
   ScheduledTask,
   ScheduledTaskCreateParams,
   ScheduledTaskUpdateParams,
-} from '../types';
+} from '../types.js';
 
 export class ScheduledTasksResource {
   constructor(private readonly http: HttpClient) {}

@@ -57,6 +57,16 @@ const report = await m2f.artifacts.create({ template: 'operation_report', agentI
 const { token } = await m2f.artifacts.share(report.id);
 ```
 
+### Phone calls (new in 0.5.0)
+
+```ts
+// Twilio and the number are set up once in the console (AI Agents → agent → Voice).
+const { callSid } = await m2f.voice.call({ agentId, to: '+525512345678', variables: { nombre: 'Ana' } });
+const call = await m2f.voice.waitForCall(callSid);   // outcome, summary, credits, transcript
+await m2f.voice.updateLine(agentId, { voice: 'Cristina', greeting: 'Hola, gracias por llamar.' });
+await m2f.voice.pause(agentId);
+```
+
 Requires Node 18+ (uses built-in `fetch`).
 
 **Prerequisites** (one-time, in the [dashboard](https://app.mind2flow.io)): create a

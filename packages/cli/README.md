@@ -29,9 +29,16 @@ m2f agents test <agentId> --cases cases.json --email me@x.com --wait   # runs FO
 m2f artifacts report <agentId> --from 2026-08-01 --to 2026-08-31      # operation report
 m2f artifacts list
 m2f artifacts share <id>                             # public link, customers hidden
+
+# New in 0.5.0 — phone calls (Twilio set up once in the console)
+m2f voice lines                                      # agents that answer calls
+m2f voice call <agentId> +525512345678 --var nombre=Ana --wait
+m2f voice calls <agentId>                            # outcome, credits, summary
+m2f voice set <agentId> --voice Cristina --greeting "Hola, gracias por llamar."
+m2f voice pause <agentId>                            # and resume
 ```
 
-`analyze`, `artifacts report` and `agents test` run an LLM on your own key and cost tokens; `agents test` also runs the agent's connected apps for real. The others only read.
+`analyze`, `artifacts report` and `agents test` run an LLM on your own key and cost tokens; `agents test` also runs the agent's connected apps for real. `voice call` places a real phone call (credits + Twilio minutes). The others only read.
 
 Configuration lives in `~/.m2f/config.json`; `M2F_API_KEY` / `M2F_BASE_URL`
 environment variables override it.

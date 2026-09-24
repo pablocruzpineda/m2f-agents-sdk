@@ -1,5 +1,5 @@
-import { M2FError } from './errors';
-import type { Envelope } from './types';
+import { M2FError } from './errors.js';
+import type { Envelope } from './types.js';
 
 export interface HttpClientOptions {
   apiKey: string;

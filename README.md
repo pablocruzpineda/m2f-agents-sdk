@@ -7,7 +7,7 @@ Build, manage and execute AI agents on the [Mind2Flow](https://app.mind2flow.io)
 | [`@mind2flow/agents-sdk`](packages/sdk) | Typed, **zero-dependency** TypeScript client for the Mind2Flow REST API v1 | `npm install @mind2flow/agents-sdk` |
 | [`@mind2flow/cli`](packages/cli) | The `m2f` command-line interface, built on the SDK | `npm install -g @mind2flow/cli` |
 
-Both cover the full platform surface: **AI agents, multi-agent crews, devices (WhatsApp/SMS/email/web), custom Python tools, scheduled tasks, and the GraphOS knowledge graph.**
+Both cover the full platform surface: **AI agents, multi-agent crews, devices (WhatsApp/SMS/email/web), phone calls, custom Python tools, scheduled tasks, and the GraphOS knowledge graph.**
 
 ## Contents
 
@@ -17,6 +17,7 @@ Both cover the full platform surface: **AI agents, multi-agent crews, devices (W
 - [CLI](#cli)
 - [CLI command reference](#cli-command-reference)
 - [Analysing your agents](#analysing-your-agents)
+- [Phone calls (voice)](#phone-calls-voice)
 - [Knowledge graph (GraphOS)](#knowledge-graph-graphos)
 - [Using the CLI from AI coding assistants](#using-the-cli-from-ai-coding-assistants)
 - [MCP server](#mcp-server)
@@ -190,6 +191,16 @@ m2f knowledge add-fact "<statement>" [--from <iso>] [--until <iso>]
 m2f knowledge invalidate <factUuid>
 m2f knowledge usage [--json] [--set-limit <n>] [--clear-limit]
 
+m2f voice lines [--json]
+m2f voice line <agentId>
+m2f voice set <agentId> [--voice <id|name>] [--greeting <text>] [--number <e164>]
+m2f voice pause|resume <agentId>
+m2f voice call <agentId> <to> [--var key=value ...] [--wait] [--json]
+m2f voice calls <agentId> [--limit <n>] [--json]
+m2f voice show <callSid> [--json]
+m2f voice voices [--json]
+m2f voice pricing
+
 m2f mcp setup [--mcp-key <mcp_...>] [--url <url>] [--name <name>]   # writes ~/.cursor/mcp.json
 m2f mcp claude-command [--mcp-key <mcp_...>] [--url <url>]          # prints the claude mcp add command
 ```
@@ -329,6 +340,30 @@ const { token } = await client.artifacts.share(mine.id); // <app>/a/<token>
 A public link shows the latest version without signing in. Internal ids are
 always removed from it; end customers' names, phones and emails are replaced
 unless you pass `redact: false`.
+
+## Phone calls (voice)
+
+*New in 0.5.0.* An agent can answer a phone number and place calls, with the
+same prompt, knowledge and tools it uses in chat, on **your own Twilio
+account**. Connect Twilio and pick the number once in the console (AI Agents →
+agent → Voice); after that:
+
+```ts
+const { callSid } = await client.voice.call({ agentId, to: '+525512345678', variables: { nombre: 'Ana' } });
+const call = await client.voice.waitForCall(callSid);   // outcome, summary, credits, transcript
+
+await client.voice.updateLine(agentId, { voice: 'Cristina', greeting: 'Hola, gracias por llamar.' });
+await client.voice.pause(agentId);
+```
+
+```bash
+m2f voice call <agentId> +525512345678 --var nombre=Ana --wait
+m2f voice calls <agentId>
+```
+
+Credits are charged per started 15 s of AI talk time (`m2f voice pricing`);
+Twilio bills minutes and numbers to your Twilio account. Details:
+[docs/voice.md](docs/voice.md).
 
 ## Knowledge graph (GraphOS)
 

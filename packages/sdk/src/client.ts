@@ -1,13 +1,14 @@
-import { HttpClient } from './http';
-import { AgentsResource } from './resources/agents';
-import { CrewsResource } from './resources/crews';
-import { DevicesResource } from './resources/devices';
-import { ToolsResource } from './resources/tools';
-import { ScheduledTasksResource } from './resources/scheduledTasks';
-import { AccountResource } from './resources/account';
-import { KnowledgeResource } from './resources/knowledge';
-import { OrganizationResource } from './resources/organization';
-import { ArtifactsResource } from './resources/artifacts';
+import { HttpClient } from './http.js';
+import { AgentsResource } from './resources/agents.js';
+import { CrewsResource } from './resources/crews.js';
+import { DevicesResource } from './resources/devices.js';
+import { ToolsResource } from './resources/tools.js';
+import { ScheduledTasksResource } from './resources/scheduledTasks.js';
+import { AccountResource } from './resources/account.js';
+import { KnowledgeResource } from './resources/knowledge.js';
+import { OrganizationResource } from './resources/organization.js';
+import { ArtifactsResource } from './resources/artifacts.js';
+import { VoiceResource } from './resources/voice.js';
 
 export const DEFAULT_BASE_URL = 'https://api.mind2flow.io/api/v1';
 
@@ -47,6 +48,8 @@ export class M2FClient {
   readonly organization: OrganizationResource;
   /** Reports, test runs and prompt changes, as versioned, shareable documents. */
   readonly artifacts: ArtifactsResource;
+  /** Phone calls: place calls, manage lines, read calls and transcripts. */
+  readonly voice: VoiceResource;
 
   constructor(options: M2FClientOptions) {
     if (!options.apiKey) {
@@ -70,5 +73,6 @@ export class M2FClient {
     this.organization = new OrganizationResource(http);
     this.artifacts = new ArtifactsResource(http);
     this.knowledge = new KnowledgeResource(http);
+    this.voice = new VoiceResource(http);
   }
 }

@@ -1,4 +1,4 @@
-import type { HttpClient } from '../http';
+import type { HttpClient } from '../http.js';
 import type {
   Agent,
   AgentActions,
@@ -21,7 +21,7 @@ import type {
   SummaryParams,
   TestRunParams,
   TestRunStarted,
-} from '../types';
+} from '../types.js';
 
 export class AgentsResource {
   constructor(private readonly http: HttpClient) {}

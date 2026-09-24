@@ -762,3 +762,94 @@ export interface ArtifactShare {
   redact: boolean;
   expiresAt: string | null;
 }
+
+// ── Voice (phone calls) ─────────────────────────────────────────────────────
+
+/** An agent's phone line. Twilio and the number are set up once in the console. */
+export interface VoiceLine {
+  agentId: string;
+  /** Only in `voice.lines()`. */
+  agentName?: string;
+  phoneNumber: string;
+  /** false = paused: callers hear that the number is not available. */
+  enabled: boolean;
+  language: string;
+  /** Provider voice id. */
+  voice: string;
+  /** Catalog name; null for a voice outside the catalog. */
+  voiceName: string | null;
+  greeting: string;
+  transferEnabled: boolean;
+  outboundPurpose: string;
+}
+
+export interface VoiceLineUpdate {
+  enabled?: boolean;
+  /** Catalog id (`el-cristina`), name (`Cristina`) or an ElevenLabs voice id. */
+  voice?: string;
+  greeting?: string;
+  /** E.164 number already in your Twilio account. Creates the line if the agent has none. */
+  phoneNumber?: string;
+}
+
+export interface VoiceCallParams {
+  agentId: string;
+  /** E.164, e.g. +525512345678. */
+  to: string;
+  /** Context for the agent, e.g. `{ nombre: 'Ana', cita: 'martes 10:00' }`. */
+  variables?: Record<string, unknown>;
+}
+
+export interface VoiceCallStarted {
+  callSid: string;
+  status: string;
+  from: string;
+  to: string;
+}
+
+export interface VoiceTranscriptTurn {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  interrupted?: boolean;
+}
+
+export interface VoiceCall {
+  callSid: string;
+  agentId?: string;
+  /** `processing` while the call is live. */
+  status: 'processing' | 'success' | 'error';
+  /** Twilio's final state: completed, no-answer, busy, failed, canceled. */
+  callStatus: string | null;
+  direction: 'inbound' | 'outbound' | null;
+  from: string | null;
+  to: string | null;
+  durationSec: number | null;
+  /** Talk time with the AI — what is billed. */
+  aiSeconds: number | null;
+  credits: number;
+  outcome: string | null;
+  summary: string | null;
+  transferred: boolean;
+  startedAt: string;
+  /** Only from `voice.getCall()`. */
+  transcript?: VoiceTranscriptTurn[];
+}
+
+export interface Voice {
+  id: string;
+  name: string;
+  gender: 'female' | 'male';
+  accent: 'mx' | 'latam' | 'es';
+  provider: 'ElevenLabs' | 'Google' | 'Amazon';
+  voice: string;
+  locale: string;
+  style: string;
+  recommended: boolean;
+}
+
+export interface VoicePricing {
+  blockSeconds: number;
+  creditsPerBlock: number;
+  creditsPerMinute: number;
+  billedOn: string;
+}

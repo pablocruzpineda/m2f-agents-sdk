@@ -1,5 +1,5 @@
-import type { HttpClient } from '../http';
-import type { Crew, CrewCreateParams, CrewExecution, Pagination } from '../types';
+import type { HttpClient } from '../http.js';
+import type { Crew, CrewCreateParams, CrewExecution, Pagination } from '../types.js';
 
 export class CrewsResource {
   constructor(private readonly http: HttpClient) {}

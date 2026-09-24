@@ -59,5 +59,6 @@ Any MCP client that supports SSE transport works:
 | Crews | 10 | `crews:*` |
 | Project Management | 19 | — |
 | Knowledge Graph (GraphOS) | 7 | `knowledge:*` |
+| Voice (read only, accounts with Twilio connected) | 3 | `agents:read` |
 
 The authoritative list is whatever `tools/list` returns from your server.

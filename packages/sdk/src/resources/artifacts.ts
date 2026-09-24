@@ -1,10 +1,10 @@
-import type { HttpClient } from '../http';
+import type { HttpClient } from '../http.js';
 import type {
   Artifact,
   ArtifactCreateParams,
   ArtifactShare,
   ArtifactSummary,
-} from '../types';
+} from '../types.js';
 
 /**
  * Artifacts: documents built from typed blocks — reports, test runs, prompt

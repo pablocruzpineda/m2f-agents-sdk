@@ -1,4 +1,4 @@
-import type { HttpClient } from '../http';
+import type { HttpClient } from '../http.js';
 import type {
   KnowledgeDocument,
   KnowledgeEntityDetail,
@@ -10,7 +10,7 @@ import type {
   KnowledgeSource,
   KnowledgeSourceCreateParams,
   KnowledgeUsage,
-} from '../types';
+} from '../types.js';
 
 /**
  * GraphOS knowledge graph: query facts, manage data sources and ingestion.
