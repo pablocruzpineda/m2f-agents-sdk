@@ -12,3 +12,5 @@ export { KnowledgeResource } from './resources/knowledge.js';
 export { OrganizationResource } from './resources/organization.js';
 export { ArtifactsResource } from './resources/artifacts.js';
 export { VoiceResource } from './resources/voice.js';
+export { PanelsResource, verifyPanelWebhook } from './resources/panels.js';
+export type { PanelWebhookVerification } from './resources/panels.js';

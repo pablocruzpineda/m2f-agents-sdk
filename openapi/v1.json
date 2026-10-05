@@ -61,6 +61,10 @@
       "description": "Documents built from typed blocks — reports, test runs, prompt changes — whose figures are resolved from the database by the server, never typed by a model. Versioned; shareable by a public link that hides customer details by default. Scopes: agents:read / agents:write."
     },
     {
+      "name": "Panels",
+      "description": "For external panels (a CRM, an inbox): subscribe to a WhatsApp device's traffic through a signed webhook and send through it. Available when panels are enabled on the server."
+    },
+    {
       "name": "Voice",
       "description": "Phone calls with your agents (Twilio ConversationRelay, on your own Twilio account). Connect Twilio and pick a number once in the console (AI Agents → agent → Voice); then place calls, change the voice or greeting, pause the line and read calls here. Billed at 1 credit per 15 s of AI talk time (see /voice/pricing); Twilio bills minutes and numbers to your Twilio account. Scopes: agents:read / agents:write."
     },
@@ -5786,6 +5790,379 @@
           },
           "429": {
             "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panels/devices/{deviceId}/webhook": {
+      "put": {
+        "tags": [
+          "Panels"
+        ],
+        "summary": "Subscribe a panel to a device",
+        "operationId": "setPanelWebhook",
+        "description": "From now on every message the device receives or sends (agent replies included), every delivery status and every connection change is POSTed to `url`. Each delivery carries `X-M2F-Timestamp`, `X-M2F-Event`, `X-M2F-Delivery` (stable across retries — use it as an idempotency key) and `X-M2F-Signature: sha256=<hex HMAC-SHA256 of \"<timestamp>.<raw body>\" with the returned secret>`. A device has one subscription; calling this again replaces the URL. Messages are delivered at least once — after a gap (a restart, or the first event of a device) the missed ones are recovered and sent with `replayed: true`, so deduplicate on `message.id`. Status and connection events are not recovered.",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Device id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Public https URL of the panel"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/PanelSubscription"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The device has no WhatsApp number connected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Panels"
+        ],
+        "summary": "Get a device's panel subscription",
+        "operationId": "getPanelWebhook",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Device id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription, or null when there is none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/PanelSubscription",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Panels"
+        ],
+        "summary": "Unsubscribe",
+        "operationId": "deletePanelWebhook",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Device id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unsubscribed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panels/devices/{deviceId}/messages": {
+      "post": {
+        "tags": [
+          "Panels"
+        ],
+        "summary": "Send a WhatsApp message through a device",
+        "operationId": "sendPanelMessage",
+        "description": "The device must be connected and assigned to an agent. On numbers connected through the official Cloud API, free-form messages only reach a contact within 24 hours of their last message (409 `OUTSIDE_24H_WINDOW`); send a template outside it.",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Device id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PanelMessageSend"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sent"
+          },
+          "400": {
+            "description": "Invalid message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Outside the 24-hour window",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many messages from this device",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "WhatsApp refused the message",
             "content": {
               "application/json": {
                 "schema": {
@@ -12486,6 +12863,303 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          }
+        }
+      },
+      "PanelSubscription": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Verifies X-M2F-Signature. Stable for the device."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "message.received",
+                "message.sent",
+                "message.status",
+                "connection.update"
+              ]
+            }
+          }
+        }
+      },
+      "PanelMessageSend": {
+        "type": "object",
+        "required": [
+          "phoneNumber"
+        ],
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "description": "Recipient, digits with country code"
+          },
+          "messageType": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "video",
+              "audio",
+              "document",
+              "template"
+            ],
+            "default": "text"
+          },
+          "message": {
+            "type": "string",
+            "description": "Text, or the caption of a media message"
+          },
+          "mediaUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Media by URL (or use mediaData)"
+          },
+          "mediaData": {
+            "type": "string",
+            "description": "Media as base64"
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "Required for media messages"
+          },
+          "template": {
+            "type": "object",
+            "description": "Cloud API numbers only",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "language": {
+                "type": "string"
+              },
+              "values": {
+                "type": "object"
+              },
+              "components": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "PanelEvent": {
+        "type": "object",
+        "description": "Body of a webhook delivery. Exactly one of message / status / connection is present, per `type`.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "message.received",
+              "message.sent",
+              "message.status",
+              "connection.update"
+            ]
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "baileys",
+              "cloud"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "message": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "WhatsApp message id"
+              },
+              "fromMe": {
+                "type": "boolean"
+              },
+              "contact": {
+                "type": "object",
+                "properties": {
+                  "jid": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "isGroup": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "image",
+                  "video",
+                  "audio",
+                  "document",
+                  "sticker",
+                  "location",
+                  "contact",
+                  "reaction",
+                  "unknown"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "nullable": true
+              },
+              "media": {
+                "type": "object",
+                "properties": {
+                  "base64": {
+                    "type": "string"
+                  },
+                  "omitted": {
+                    "type": "boolean",
+                    "description": "True when the file was too large to embed"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Instead of base64, for a message that was sent by URL"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "fileName": {
+                    "type": "string"
+                  },
+                  "seconds": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  }
+                }
+              },
+              "location": {
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  }
+                }
+              },
+              "reaction": {
+                "type": "object",
+                "properties": {
+                  "emoji": {
+                    "type": "string"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              },
+              "sharedContact": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "vcard": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              },
+              "quotedMessageId": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "integer",
+                "nullable": true,
+                "description": "Unix seconds"
+              }
+            }
+          },
+          "status": {
+            "type": "object",
+            "properties": {
+              "messageId": {
+                "type": "string"
+              },
+              "contactJid": {
+                "type": "string",
+                "nullable": true
+              },
+              "fromMe": {
+                "type": "boolean"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "sent",
+                  "delivered",
+                  "read",
+                  "played",
+                  "failed",
+                  "deleted",
+                  "unknown"
+                ]
+              },
+              "raw": {
+                "type": "string"
+              }
+            }
+          },
+          "connection": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string"
+              }
+            }
+          },
+          "replayed": {
+            "type": "boolean",
+            "description": "True on a message recovered after a gap instead of seen live. It may repeat one already delivered: deduplicate on message.id."
+          },
+          "raw": {
+            "type": "object",
+            "description": "The gateway's original payload, without media bytes"
           }
         }
       },

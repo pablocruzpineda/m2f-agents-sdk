@@ -13,6 +13,7 @@ import { registerKnowledgeCommands } from './commands/knowledge';
 import { registerOrganizationCommands } from './commands/organization';
 import { registerArtifactCommands } from './commands/artifacts';
 import { registerVoiceCommands } from './commands/voice';
+import { registerPanelCommands } from './commands/panels';
 
 const program = new Command();
 
@@ -36,5 +37,6 @@ registerKnowledgeCommands(program);
 registerOrganizationCommands(program);
 registerArtifactCommands(program);
 registerVoiceCommands(program);
+registerPanelCommands(program);
 
 program.parseAsync(process.argv);

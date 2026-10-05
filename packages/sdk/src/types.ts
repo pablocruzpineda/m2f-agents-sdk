@@ -853,3 +853,93 @@ export interface VoicePricing {
   creditsPerMinute: number;
   billedOn: string;
 }
+
+// ---------- Panels ----------
+
+export type PanelEventType = 'message.received' | 'message.sent' | 'message.status' | 'connection.update';
+
+export interface PanelSubscription {
+  deviceId: string;
+  url: string;
+  /** Verifies the signature of every delivery. Stable for the device. */
+  secret: string;
+  events: PanelEventType[];
+}
+
+export type PanelMessageType =
+  | 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker'
+  | 'location' | 'contact' | 'reaction' | 'unknown';
+
+export interface PanelMedia {
+  /** The file's bytes, when available. */
+  base64?: string;
+  /** True when the file was too large to embed. */
+  omitted?: boolean;
+  /** Instead of `base64`, for a message that was sent by URL. */
+  url?: string;
+  mimeType?: string;
+  fileName?: string;
+  seconds?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface PanelMessage {
+  /** WhatsApp message id. The same id comes back in `message.status` events. */
+  id: string;
+  fromMe: boolean;
+  /** The other party: who wrote (received) or who it was sent to (sent). */
+  contact: { jid: string; phone: string | null; name: string | null; isGroup: boolean };
+  type: PanelMessageType;
+  text: string | null;
+  media?: PanelMedia;
+  location?: { latitude: number; longitude: number; name?: string; address?: string };
+  reaction?: { emoji: string; messageId: string | null };
+  sharedContact?: { name: string | null; vcard: string | null };
+  /** Id of the message this one replies to. */
+  quotedMessageId?: string;
+  /** Unix seconds. */
+  timestamp: number | null;
+}
+
+export type PanelMessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'played' | 'failed' | 'deleted' | 'unknown';
+
+/** Body of a webhook delivery. Which of message / status / connection is set follows `type`. */
+export interface PanelEvent {
+  type: PanelEventType;
+  deviceId: string;
+  /** "baileys" (QR) or "cloud" (official Cloud API). */
+  channel: string;
+  occurredAt: string;
+  message?: PanelMessage;
+  status?: { messageId: string; contactJid: string | null; fromMe: boolean; state: PanelMessageStatus; raw: string };
+  connection?: { state: string };
+  /**
+   * True on a message recovered after a gap instead of seen live. It may
+   * repeat one already delivered: deduplicate on `message.id`.
+   */
+  replayed?: true;
+  /** The gateway's original payload, without media bytes. */
+  raw: unknown;
+}
+
+export interface PanelSendParams {
+  /** Recipient, digits with country code. */
+  phoneNumber: string;
+  messageType?: 'text' | 'image' | 'video' | 'audio' | 'document' | 'template';
+  /** Text, or the caption of a media message. */
+  message?: string;
+  mediaUrl?: string;
+  /** Media as base64 (alternative to mediaUrl). */
+  mediaData?: string;
+  /** Required for media messages. */
+  mimeType?: string;
+  /** Official Cloud API numbers only. */
+  template?: { name: string; language: string; values?: Record<string, string>; components?: unknown[] };
+}
+
+export interface PanelSendResult {
+  messageType: string;
+  /** The gateway's answer; for QR numbers `key.id` is the WhatsApp message id. */
+  payload: unknown;
+}

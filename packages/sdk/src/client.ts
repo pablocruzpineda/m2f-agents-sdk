@@ -9,6 +9,7 @@ import { KnowledgeResource } from './resources/knowledge.js';
 import { OrganizationResource } from './resources/organization.js';
 import { ArtifactsResource } from './resources/artifacts.js';
 import { VoiceResource } from './resources/voice.js';
+import { PanelsResource } from './resources/panels.js';
 
 export const DEFAULT_BASE_URL = 'https://api.mind2flow.io/api/v1';
 
@@ -50,6 +51,8 @@ export class M2FClient {
   readonly artifacts: ArtifactsResource;
   /** Phone calls: place calls, manage lines, read calls and transcripts. */
   readonly voice: VoiceResource;
+  /** For external panels: subscribe to a WhatsApp device's traffic and send through it. */
+  readonly panels: PanelsResource;
 
   constructor(options: M2FClientOptions) {
     if (!options.apiKey) {
@@ -74,5 +77,6 @@ export class M2FClient {
     this.artifacts = new ArtifactsResource(http);
     this.knowledge = new KnowledgeResource(http);
     this.voice = new VoiceResource(http);
+    this.panels = new PanelsResource(http);
   }
 }

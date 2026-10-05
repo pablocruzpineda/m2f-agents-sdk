@@ -67,6 +67,22 @@ await m2f.voice.updateLine(agentId, { voice: 'Cristina', greeting: 'Hola, gracia
 await m2f.voice.pause(agentId);
 ```
 
+### Panels — your own CRM or inbox on a WhatsApp device (new in 0.6.0)
+
+```ts
+import { verifyPanelWebhook, type PanelEvent } from '@mind2flow/agents-sdk';
+
+const { secret } = await m2f.panels.subscribe(deviceId, 'https://crm.example.com/webhooks/mind2flow');
+await m2f.panels.sendMessage(deviceId, { phoneNumber: '5215512345678', message: 'Hola 👋' });
+
+// in your webhook: verify on the raw body, then parse
+if (await verifyPanelWebhook({ secret, body, signature, timestamp })) {
+  const event = JSON.parse(body) as PanelEvent; // message.received | message.sent | message.status | connection.update
+}
+```
+
+Full guide: [docs/panels.md](https://github.com/pablocruzpineda/m2f-agents-sdk/blob/main/docs/panels.md).
+
 Requires Node 18+ (uses built-in `fetch`).
 
 **Prerequisites** (one-time, in the [dashboard](https://app.mind2flow.io)): create a

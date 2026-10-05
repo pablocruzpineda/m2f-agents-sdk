@@ -18,6 +18,7 @@ Both cover the full platform surface: **AI agents, multi-agent crews, devices (W
 - [CLI command reference](#cli-command-reference)
 - [Analysing your agents](#analysing-your-agents)
 - [Phone calls (voice)](#phone-calls-voice)
+- [Panels (CRMs and inboxes)](#panels-crms-and-inboxes)
 - [Knowledge graph (GraphOS)](#knowledge-graph-graphos)
 - [Using the CLI from AI coding assistants](#using-the-cli-from-ai-coding-assistants)
 - [MCP server](#mcp-server)
@@ -166,6 +167,7 @@ m2f crews execution <crewId> <executionId>
 
 m2f devices list [--available] [--json]
 m2f devices get|create|delete
+m2f panels subscribe <deviceId> <url> | show | unsubscribe | send <deviceId> <phone> <message>
 
 m2f tools list [--public] [--json]
 m2f tools push <file.py> --description <text> [--name <name>] [--tool-id <id>]
@@ -364,6 +366,23 @@ m2f voice calls <agentId>
 Credits are charged per started 15 s of AI talk time (`m2f voice pricing`);
 Twilio bills minutes and numbers to your Twilio account. Details:
 [docs/voice.md](docs/voice.md).
+
+## Panels (CRMs and inboxes)
+
+*New in 0.6.0.* Build your own CRM or shared inbox on a WhatsApp device: receive everything
+the device receives and sends through a signed webhook, and send through it.
+The agent assigned to the device keeps answering as usual.
+
+```ts
+const { secret } = await m2f.panels.subscribe(deviceId, 'https://crm.example.com/webhooks/mind2flow');
+await m2f.panels.sendMessage(deviceId, { phoneNumber: '5215512345678', message: 'Hola 👋' });
+
+// in your webhook
+const genuine = await verifyPanelWebhook({ secret, body, signature, timestamp });
+```
+
+Event format, delivery guarantees and the send options:
+[docs/panels.md](docs/panels.md).
 
 ## Knowledge graph (GraphOS)
 

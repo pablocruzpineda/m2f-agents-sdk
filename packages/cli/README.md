@@ -36,6 +36,12 @@ m2f voice call <agentId> +525512345678 --var nombre=Ana --wait
 m2f voice calls <agentId>                            # outcome, credits, summary
 m2f voice set <agentId> --voice Cristina --greeting "Hola, gracias por llamar."
 m2f voice pause <agentId>                            # and resume
+
+# New in 0.6.0 — panels: your own CRM or inbox on a WhatsApp device
+m2f panels subscribe <deviceId> https://crm.example.com/webhooks/mind2flow
+m2f panels show <deviceId>                           # url, signing secret, events
+m2f panels send <deviceId> 5215512345678 "Hola 👋"
+m2f panels unsubscribe <deviceId>
 ```
 
 `analyze`, `artifacts report` and `agents test` run an LLM on your own key and cost tokens; `agents test` also runs the agent's connected apps for real. `voice call` places a real phone call (credits + Twilio minutes). The others only read.
