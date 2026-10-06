@@ -1,4 +1,5 @@
 import { M2FError } from '@mind2flow/agents-sdk';
+import type { AgentBreakdown } from '@mind2flow/agents-sdk';
 
 /** Print rows as an aligned plain-text table. */
 export function printTable(rows: Array<Record<string, unknown>>, columns: string[]): void {
@@ -26,6 +27,22 @@ export function printTable(rows: Array<Record<string, unknown>>, columns: string
   console.log(line(columns.map((c) => c.toUpperCase())));
   console.log(line(widths.map((w) => '-'.repeat(w))));
   for (const row of cells) console.log(line(row));
+}
+
+/** The per-agent split an "all" summary carries; prints nothing for a single agent. */
+export function printAgentBreakdown(agents?: AgentBreakdown[]): void {
+  if (!agents?.length) return;
+  console.log('\nPer agent:');
+  printTable(
+    agents.map((a) => ({
+      agent: a.agentName ?? a.agentId,
+      messages: a.messages,
+      incoming: a.incoming,
+      errors: a.errors,
+      'last activity': a.lastAt.slice(0, 16).replace('T', ' '),
+    })),
+    ['agent', 'messages', 'incoming', 'errors', 'last activity']
+  );
 }
 
 export function printJson(value: unknown): void {

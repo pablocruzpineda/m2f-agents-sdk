@@ -426,8 +426,26 @@ export interface OperationSummary {
   channels: Array<{ channel: string; messages: number }>;
   responseTimeMs: { avg: number; p50: number; p95: number; samples: number } | null;
   errors: { count: number; samples: string[] };
+  /**
+   * Only when agentId is "all" (the organization summary's default): the same
+   * figures split by agent, busiest first.
+   */
+  agents?: AgentBreakdown[];
   truncated: boolean;
   notes: string[];
+}
+
+/** One agent's share of an "all" summary, counted like `totals`. */
+export interface AgentBreakdown {
+  agentId: string;
+  agentName: string | null;
+  /** Incoming plus successful replies. Failed replies are in `errors`. */
+  messages: number;
+  incoming: number;
+  /** Successful replies only. */
+  outgoing: number;
+  errors: number;
+  lastAt: string;
 }
 
 export interface TranscriptMessage {

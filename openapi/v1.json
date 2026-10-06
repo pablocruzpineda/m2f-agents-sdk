@@ -11500,6 +11500,40 @@
               }
             }
           },
+          "agents": {
+            "type": "array",
+            "description": "Only when agentId is \"all\" (the organization summary's default): the same figures split by agent, busiest first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "agentId": {
+                  "type": "string"
+                },
+                "agentName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "messages": {
+                  "type": "integer",
+                  "description": "Incoming plus successful replies, as in `totals`."
+                },
+                "incoming": {
+                  "type": "integer"
+                },
+                "outgoing": {
+                  "type": "integer",
+                  "description": "Successful replies only."
+                },
+                "errors": {
+                  "type": "integer"
+                },
+                "lastAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
           "truncated": {
             "type": "boolean"
           },

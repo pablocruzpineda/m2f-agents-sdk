@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import fs from 'fs';
 import { getClient } from '../config';
-import { printTable, printJson, fail } from '../output';
+import { printTable, printJson, printAgentBreakdown, fail } from '../output';
 
 export function registerAgentCommands(program: Command): void {
   const agents = program.command('agents').description('Manage and execute AI agents');
@@ -203,6 +203,7 @@ export function registerAgentCommands(program: Command): void {
           })),
           [s.bucket, 'incoming', 'outgoing', 'people', 'p50 reply']
         );
+        printAgentBreakdown(s.agents);
         printNotes(s.notes);
       } catch (error) {
         fail(error);

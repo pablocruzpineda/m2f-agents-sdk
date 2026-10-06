@@ -21,7 +21,7 @@ m2f agents conversations <agentId> --full           # whole threads
 m2f agents analyze <agentId> "Did it end in a sale?" --field outcome:"bought, quoted or only asked"
 m2f agents integrations <agentId>                   # connected apps, and whether they work
 m2f agents channels <agentId>                       # WhatsApp checked live, endpoint, shared link
-m2f org summary --bucket month                      # TENANT/ADMIN only
+m2f org summary --bucket month                      # TENANT/ADMIN only; per-agent split since 0.6.4
 
 # New in 0.4.0
 m2f agents actions <agentId>                         # what its apps actually answered

@@ -23,6 +23,10 @@ Resources: `agents`, `crews`, `devices`, `tools`, `scheduledTasks`, `knowledge` 
 // Exact figures, from the database. Read `notes` alongside them.
 const s = await m2f.agents.summary(agentId, { from: '2026-08-01', bucket: 'week' });
 
+// Every agent at once: `agents` splits the same figures by agent (0.6.4).
+const org = await m2f.organization.summary({ from: '2026-10-01' });
+for (const a of org.agents ?? []) console.log(a.agentName, a.messages, a.errors);
+
 // Which conversations mention these terms? Customers' messages by default.
 const hits = await m2f.agents.searchConversations(agentId, { terms: ['drill', 'paint'] });
 

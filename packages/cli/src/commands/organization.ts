@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { getClient } from '../config';
-import { printTable, printJson, fail } from '../output';
+import { printTable, printJson, printAgentBreakdown, fail } from '../output';
 
 /**
  * Organization-wide reads. TENANT or ADMIN only — the role is checked against
@@ -36,6 +36,7 @@ export function registerOrganizationCommands(program: Command): void {
           }],
           ['messages', 'incoming', 'people', 'errors']
         );
+        printAgentBreakdown(s.agents);
         if (s.notes.length) {
           console.log('\nNotes:');
           for (const n of s.notes) console.log(`  - ${n}`);
