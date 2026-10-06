@@ -50,6 +50,16 @@ export class AgentsResource {
     return res.payload!.agent;
   }
 
+  /** Pause an agent: it stops answering on its channels (a WhatsApp number, for instance) until resumed. */
+  pause(agentId: string): Promise<Agent> {
+    return this.update(agentId, { status: 'inactive' });
+  }
+
+  /** Resume a paused agent. */
+  resume(agentId: string): Promise<Agent> {
+    return this.update(agentId, { status: 'active' });
+  }
+
   /** Delete an agent. */
   async delete(agentId: string): Promise<void> {
     await this.http.delete(`/agents/${agentId}`);

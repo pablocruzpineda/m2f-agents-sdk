@@ -11,7 +11,8 @@ import type { PanelSendParams, PanelSendResult, PanelSubscription } from '../typ
  * signed. Verify each delivery with `verifyPanelWebhook`. A message can
  * arrive more than once (always with the same `message.id`): store it once.
  *
- * Sending requires the device to be connected and assigned to an agent.
+ * A number is answered either by people through your panel (`inbox`) or by a
+ * Mind2Flow agent the panel follows (`agent`): `subscribe()` says which.
  */
 export class PanelsResource {
   constructor(private readonly http: HttpClient) {}

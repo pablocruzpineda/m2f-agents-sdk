@@ -19,7 +19,7 @@ function clientWith(respond) {
 }
 
 test('subscribe PUTs the url and returns the subscription', async () => {
-  const subscription = { deviceId: 'dev1', url: 'https://crm.example/hook', secret: 'whsec_abc', events: ['message.received'] };
+  const subscription = { deviceId: 'dev1', url: 'https://crm.example/hook', secret: 'whsec_abc', events: ['message.received'], mode: 'inbox', agent: null };
   const { m2f, calls } = clientWith(() => ({ json: { status: 200, payload: subscription } }));
   assert.deepEqual(await m2f.panels.subscribe('dev1', 'https://crm.example/hook'), subscription);
   assert.deepEqual(calls[0], { url: 'http://api.test/api/v1/panels/devices/dev1/webhook', method: 'PUT', body: { url: 'https://crm.example/hook' }, apiKey: 'rest_test' });
@@ -47,6 +47,16 @@ test('sendMessage posts the message and hands back the gateway answer', async ()
 test('a refused send surfaces as M2FError with the server status', async () => {
   const { m2f } = clientWith(() => ({ status: 409, json: { status: 409, message: 'More than 24 hours have passed', code: 'OUTSIDE_24H_WINDOW' } }));
   await assert.rejects(m2f.panels.sendMessage('dev1', { phoneNumber: '1', message: 'x' }), (e) => e instanceof M2FError && e.status === 409);
+});
+
+test('pausing and resuming an agent sets its status', async () => {
+  const { m2f, calls } = clientWith(() => ({ json: { status: 200, payload: { agent: { id: 'ag1', name: 'Ventas', status: 'inactive' } } } }));
+  await m2f.agents.pause('ag1');
+  await m2f.agents.resume('ag1');
+  assert.deepEqual(calls.map((call) => [call.method, call.url, call.body]), [
+    ['PATCH', 'http://api.test/api/v1/agents/ag1', { status: 'inactive' }],
+    ['PATCH', 'http://api.test/api/v1/agents/ag1', { status: 'active' }],
+  ]);
 });
 
 test('verifyPanelWebhook accepts a genuine delivery and nothing else', async () => {

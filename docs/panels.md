@@ -11,14 +11,31 @@ Mind2Flow keeps doing its part exactly as before — the agent assigned to the
 device answers, activity is logged, credits are charged. The panel gets a copy
 of the traffic; it is not in its path.
 
+## Two ways a number works
+
+A WhatsApp number in Mind2Flow is either answered by people or by an agent —
+never both arrangements at once — and a panel can work with both:
+
+| | People answer (`inbox`) | An agent answers (`agent`) |
+| --- | --- | --- |
+| In Mind2Flow | the device has no agent | the device is assigned to an agent |
+| Who replies to contacts | your users, through the panel | the agent; your users can also write |
+| What the panel does | receives and sends | follows the conversation, sends, pauses the agent |
+
+Which one applies is decided by the device at the moment you subscribe, and
+`subscribe()` tells you (`mode`). A device subscribed as `inbox` is reserved
+for the panel: it shows as taken in Mind2Flow (by an agent named
+`[Panels] <device>`), and it cannot be assigned to a real agent until you
+unsubscribe. To put an agent on that number: unsubscribe, assign the device to
+the agent in Mind2Flow, subscribe again.
+
 ## Before you start
 
 1. Connect a WhatsApp number to a device in the console (QR, or the official
    Cloud API). `m2f.devices.list()` shows your devices and whether they are
    connected.
-2. Assign an agent to the device (`m2f.agents.assignDevice(agentId, deviceId)`).
-   A device with no agent cannot send.
-3. Create an API key with the `devices:read` and `devices:write` scopes.
+2. Create an API key with the scopes `devices:read` and `devices:write` —
+   plus `agents:write` if the panel will pause and resume agents.
 
 ## Subscribe
 
@@ -27,9 +44,11 @@ import { M2FClient } from '@mind2flow/agents-sdk';
 
 const m2f = new M2FClient({ apiKey: process.env.M2F_API_KEY! });
 
-const { secret } = await m2f.panels.subscribe(deviceId, 'https://crm.example.com/webhooks/mind2flow');
+const { secret, mode, agent } = await m2f.panels.subscribe(deviceId, 'https://crm.example.com/webhooks/mind2flow');
 // Store `secret` on your server. It verifies every delivery and stays the same
 // for the device, also when you subscribe again with a new URL.
+// mode === 'inbox'  → people answer through your panel
+// mode === 'agent'  → `agent.name` answers; your panel follows along
 ```
 
 A device has one subscription. `m2f.panels.getSubscription(deviceId)` reads it
@@ -160,21 +179,23 @@ Things to know:
   approved template instead:
   `{ phoneNumber, messageType: 'template', template: { name, language, values } }`.
 - **Rate limit**: 20 messages per minute per device (status 429).
-- **Billing**: each sent message is logged as activity of the device's agent
-  and charged like any other outgoing message.
+- **Billing**: each sent message costs one credit, like any other outgoing
+  message, on top of the credit every API request costs.
 - Locations, stickers, reactions and quoted replies can be received but not
   sent yet.
 
-## Which agent answers
+## Pausing the agent of a number
 
-That is decided in Mind2Flow, per device:
+In `agent` mode the agent keeps answering while your users write from the
+panel. To let a person take over, pause it — it stops answering every contact
+of that number until you resume it:
 
-- an agent whose input is **WhatsApp** answers contacts by itself; the panel
-  sees both sides of the conversation;
-- an agent whose input is **API** stays silent on incoming WhatsApp messages.
-  The panel decides when to call it (its input endpoint) and sends the reply
-  with `sendMessage`. This is the setup to use when the panel needs to route
-  between several agents or pause the AI for a contact.
+```ts
+await m2f.agents.pause(agent.id);
+await m2f.agents.resume(agent.id);
+```
+
+Pausing for a single contact is not available.
 
 ## REST
 

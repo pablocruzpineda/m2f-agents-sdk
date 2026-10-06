@@ -5817,7 +5817,7 @@
         ],
         "summary": "Subscribe a panel to a device",
         "operationId": "setPanelWebhook",
-        "description": "From now on every message the device receives or sends (agent replies included), every delivery status and every connection change is POSTed to `url`. Each delivery carries `X-M2F-Timestamp`, `X-M2F-Event`, `X-M2F-Delivery` (stable across retries — use it as an idempotency key) and `X-M2F-Signature: sha256=<hex HMAC-SHA256 of \"<timestamp>.<raw body>\" with the returned secret>`. A device has one subscription; calling this again replaces the URL. Messages are delivered at least once — after a gap (a restart, or the first event of a device) the missed ones are recovered and sent with `replayed: true`, so deduplicate on `message.id`. Status and connection events are not recovered.",
+        "description": "From now on every message the device receives or sends (agent replies included), every delivery status and every connection change is POSTed to `url`. Each delivery carries `X-M2F-Timestamp`, `X-M2F-Event`, `X-M2F-Delivery` (stable across retries — use it as an idempotency key) and `X-M2F-Signature: sha256=<hex HMAC-SHA256 of \"<timestamp>.<raw body>\" with the returned secret>`. A device has one subscription; calling this again replaces the URL. A device that no agent answers is reserved for the panel (mode `inbox`): while subscribed it cannot be assigned to an agent, and unsubscribing frees it. A device an agent already answers stays with it (mode `agent`). Messages are delivered at least once — after a gap (a restart, or the first event of a device) the missed ones are recovered and sent with `replayed: true`, so deduplicate on `message.id`. Status and connection events are not recovered.",
         "parameters": [
           {
             "name": "deviceId",
@@ -6059,7 +6059,7 @@
         ],
         "summary": "Send a WhatsApp message through a device",
         "operationId": "sendPanelMessage",
-        "description": "The device must be connected and assigned to an agent. On numbers connected through the official Cloud API, free-form messages only reach a contact within 24 hours of their last message (409 `OUTSIDE_24H_WINDOW`); send a template outside it.",
+        "description": "The device must be connected and subscribed (or assigned to an agent). Each message sent is charged like any other outgoing message. On numbers connected through the official Cloud API, free-form messages only reach a contact within 24 hours of their last message (409 `OUTSIDE_24H_WINDOW`); send a template outside it.",
         "parameters": [
           {
             "name": "deviceId",
@@ -12752,6 +12752,14 @@
           "name": {
             "type": "string"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "description": "Set to inactive to pause the agent: it stops answering on its channels until set back to active."
+          },
           "description": {
             "type": "string"
           },
@@ -12890,6 +12898,30 @@
                 "message.status",
                 "connection.update"
               ]
+            }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "inbox",
+              "agent"
+            ],
+            "description": "\"inbox\": people answer through the panel — the device had no agent and is now reserved for the panel. \"agent\": a Mind2Flow agent (or crew) answers; the panel follows the conversation and can write too."
+          },
+          "agent": {
+            "type": "object",
+            "nullable": true,
+            "description": "The agent that answers, in agent mode (null when a crew does). Pause or resume it with PATCH /agents/{agentId} { \"status\": \"inactive\" | \"active\" }.",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
             }
           }
         }

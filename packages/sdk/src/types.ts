@@ -26,6 +26,8 @@ export interface Agent {
   description?: string | null;
   systemPrompt?: string | null;
   type?: string;
+  /** "active" while the agent answers. */
+  status?: string;
   modelProvider?: string | null;
   models?: Record<string, string | null> | null;
   temperature?: number | null;
@@ -56,7 +58,10 @@ export interface AgentCreateParams {
   toolsConfig?: unknown;
 }
 
-export type AgentUpdateParams = Partial<AgentCreateParams>;
+export type AgentUpdateParams = Partial<AgentCreateParams> & {
+  /** "inactive" pauses the agent: it stops answering on its channels until set back to "active". */
+  status?: 'active' | 'inactive';
+};
 
 export interface AgentActivity {
   id: string;
@@ -864,6 +869,23 @@ export interface PanelSubscription {
   /** Verifies the signature of every delivery. Stable for the device. */
   secret: string;
   events: PanelEventType[];
+  /**
+   * How the device works while subscribed. "inbox": people answer through the
+   * panel — the device had no agent and is reserved for the panel. "agent": a
+   * Mind2Flow agent (or crew) answers; the panel follows along and can write too.
+   */
+  mode: PanelDeviceMode;
+  /** The agent that answers, in agent mode (null when a crew does). */
+  agent: PanelDeviceAgent | null;
+}
+
+export type PanelDeviceMode = 'inbox' | 'agent';
+
+export interface PanelDeviceAgent {
+  id: string;
+  name: string;
+  /** "active" while it answers; see `agents.pause()` and `agents.resume()`. */
+  status: string;
 }
 
 export type PanelMessageType =
