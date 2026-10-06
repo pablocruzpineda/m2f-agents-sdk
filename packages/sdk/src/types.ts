@@ -934,7 +934,8 @@ export interface PanelEvent {
   channel: string;
   occurredAt: string;
   message?: PanelMessage;
-  status?: { messageId: string; contactJid: string | null; fromMe: boolean; state: PanelMessageStatus; raw: string };
+  /** `error`: on a failed message, the reason the gateway gave (Cloud API numbers). */
+  status?: { messageId: string; contactJid: string | null; fromMe: boolean; state: PanelMessageStatus; raw: string; error?: string };
   connection?: { state: string };
   /**
    * True on a message recovered after a gap instead of seen live. It may

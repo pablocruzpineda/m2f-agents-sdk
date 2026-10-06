@@ -13174,6 +13174,10 @@
               },
               "raw": {
                 "type": "string"
+              },
+              "error": {
+                "type": "string",
+                "description": "On a failed message, the reason the gateway gave (Cloud API numbers)"
               }
             }
           },
