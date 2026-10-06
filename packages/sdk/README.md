@@ -73,7 +73,7 @@ await m2f.voice.pause(agentId);
 import { verifyPanelWebhook, type PanelEvent } from '@mind2flow/agents-sdk';
 
 const { secret } = await m2f.panels.subscribe(deviceId, 'https://crm.example.com/webhooks/mind2flow');
-await m2f.panels.sendMessage(deviceId, { phoneNumber: '5215512345678', message: 'Hola 👋' });
+await m2f.panels.sendMessage(deviceId, { phoneNumber: '+525512345678', message: 'Hola 👋' });
 
 // in your webhook: verify on the raw body, then parse
 if (await verifyPanelWebhook({ secret, body, signature, timestamp })) {

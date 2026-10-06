@@ -375,7 +375,7 @@ The agent assigned to the device keeps answering as usual.
 
 ```ts
 const { secret } = await m2f.panels.subscribe(deviceId, 'https://crm.example.com/webhooks/mind2flow');
-await m2f.panels.sendMessage(deviceId, { phoneNumber: '5215512345678', message: 'Hola 👋' });
+await m2f.panels.sendMessage(deviceId, { phoneNumber: '+525512345678', message: 'Hola 👋' });
 
 // in your webhook
 const genuine = await verifyPanelWebhook({ secret, body, signature, timestamp });

@@ -946,7 +946,7 @@ export interface PanelEvent {
 }
 
 export interface PanelSendParams {
-  /** Recipient, digits with country code. */
+  /** Recipient in international format with its "+" (e.g. "+573211234567"). Mexican mobiles as "+52" + 10 digits, not "+521…". */
   phoneNumber: string;
   messageType?: 'text' | 'image' | 'video' | 'audio' | 'document' | 'template';
   /** Text, or the caption of a media message. */

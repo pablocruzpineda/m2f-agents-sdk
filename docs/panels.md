@@ -157,16 +157,25 @@ A recovery reaches back 30 minutes at most.
 ## Send
 
 ```ts
-await m2f.panels.sendMessage(deviceId, { phoneNumber: '5215512345678', message: 'Hola 👋' });
+await m2f.panels.sendMessage(deviceId, { phoneNumber: '+525512345678', message: 'Hola 👋' });
 
 await m2f.panels.sendMessage(deviceId, {
-  phoneNumber: '5215512345678',
+  phoneNumber: '+525512345678',
   messageType: 'image',            // image, video, audio, document
   mediaUrl: 'https://…/photo.jpg', // or mediaData: '<base64>'
   mimeType: 'image/jpeg',
   message: 'optional caption',
 });
 ```
+
+`phoneNumber` goes in international format **with its `+`**. The `+` is what
+says the country code is already there: without it only Mexican, Brazilian and
++1 numbers are understood, and any other is refused as
+`Invalid phone number format`. An incoming `contact.phone` is the number as
+WhatsApp names it, digits only — put a `+` in front to answer. One exception:
+WhatsApp names Mexican mobiles `521` + 10 digits, and they are written to as
+`+52` + the same 10 digits.
+
 
 What you send comes back through the webhook as a `message.sent` event with
 its WhatsApp id, followed by its `message.status` updates.
