@@ -29,6 +29,12 @@ export class M2FError extends Error {
     return this.status === 429;
   }
 
+  /** Every problem the server listed, e.g. for a crew blueprint that does not compile. */
+  get errors(): string[] {
+    const list = this.body && typeof this.body === 'object' ? (this.body as { errors?: unknown }).errors : undefined;
+    return Array.isArray(list) ? list.map(String) : [];
+  }
+
   get isNotFound(): boolean {
     return this.status === 404;
   }

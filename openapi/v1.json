@@ -3952,6 +3952,372 @@
         }
       }
     },
+    "/crews/blueprint": {
+      "post": {
+        "tags": [
+          "Crews"
+        ],
+        "summary": "Create a crew from a blueprint",
+        "operationId": "createCrewFromBlueprint",
+        "description": "Describe the crew in plain terms (steps, teams, if/switch branches, API and WhatsApp sends) and get the same flow and diagram the builder draws. With `dryRun=true` nothing is created: the compiled crew is returned, or every problem found.",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "description": "Validate and compile only; create nothing",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "blueprint"
+                ],
+                "properties": {
+                  "blueprint": {
+                    "$ref": "#/components/schemas/CrewBlueprint"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dry run: the blueprint is valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "crew": {
+                          "type": "object",
+                          "description": "What would be created: executionFlow, workflowLayout, agentIds, input/output/execution config"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created crew",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "crew": {
+                          "$ref": "#/components/schemas/Crew"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid blueprint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": [
+                        "agent abc was not found in this account",
+                        "a team has at most 5 members"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crews/{crewId}/blueprint": {
+      "put": {
+        "tags": [
+          "Crews"
+        ],
+        "summary": "Replace a crew's flow with a blueprint",
+        "operationId": "replaceCrewFromBlueprint",
+        "description": "Replaces the crew's steps, diagram, agents and settings. With `dryRun=true` nothing is changed.",
+        "parameters": [
+          {
+            "name": "crewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Crew id"
+          },
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "description": "Validate and compile only; change nothing",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "blueprint"
+                ],
+                "properties": {
+                  "blueprint": {
+                    "$ref": "#/components/schemas/CrewBlueprint"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated crew (or dry run result)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "crew": {
+                          "$ref": "#/components/schemas/Crew"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid blueprint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": [
+                        "agent abc was not found in this account",
+                        "a team has at most 5 members"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope (or IP not whitelisted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/crews/{crewId}": {
       "get": {
         "tags": [
@@ -4343,6 +4709,7 @@
             "description": "Crew id"
           }
         ],
+        "description": "Runs the crew and waits for it (up to ~5 minutes). `result` holds the final answer, every step (with an orchestrator's delegations) and, for a run paused on a question, the question and who must answer it.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4350,7 +4717,7 @@
                 "type": "object",
                 "properties": {
                   "input": {
-                    "description": "Input payload for the crew"
+                    "description": "Input payload for the crew, e.g. { \"message\": \"...\" }"
                   }
                 }
               }
@@ -4359,7 +4726,7 @@
         },
         "responses": {
           "200": {
-            "description": "Execution started/completed",
+            "description": "Execution finished, failed or paused",
             "content": {
               "application/json": {
                 "schema": {
@@ -4377,6 +4744,9 @@
                       "properties": {
                         "execution": {
                           "$ref": "#/components/schemas/CrewExecution"
+                        },
+                        "result": {
+                          "$ref": "#/components/schemas/CrewRunResult"
                         }
                       }
                     }
@@ -12877,6 +13247,357 @@
           }
         }
       },
+      "CrewBlueprint": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "description": "A crew in plain terms. Give either `steps` or `team` (a crew that is one orchestrator and its team). Agents are referenced by id and must be active.",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string",
+            "enum": [
+              "api",
+              "whatsapp"
+            ],
+            "default": "api"
+          },
+          "inputDeviceId": {
+            "type": "string",
+            "description": "WhatsApp input: the device the crew answers on"
+          },
+          "output": {
+            "type": "string",
+            "enum": [
+              "api",
+              "whatsapp"
+            ]
+          },
+          "outputUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "API output: where the answer is also POSTed"
+          },
+          "outputDeviceId": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "onError": {
+                "type": "string",
+                "enum": [
+                  "stop",
+                  "retry",
+                  "continue"
+                ]
+              },
+              "retries": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "stepTimeoutSeconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "passContext": {
+                "type": "boolean"
+              }
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrewBlueprintStep"
+            }
+          },
+          "team": {
+            "$ref": "#/components/schemas/CrewBlueprintTeam"
+          }
+        }
+      },
+      "CrewBlueprintTeam": {
+        "type": "object",
+        "required": [
+          "lead",
+          "members"
+        ],
+        "description": "An orchestrator: the lead decides which members to ask (1–5, the lead not among them) and writes the answer.",
+        "properties": {
+          "lead": {
+            "type": "string",
+            "description": "Agent id of the lead; it thinks with its agent's Thinking model"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 5
+          },
+          "task": {
+            "type": "string"
+          },
+          "maxQuestions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "parallel": {
+            "type": "boolean",
+            "description": "Ask independent questions at the same time (default true)"
+          }
+        }
+      },
+      "CrewBlueprintStep": {
+        "type": "object",
+        "description": "Exactly one of: `agent`, `team`, `if`, `switch`, `apiSend`, `whatsappSend`. `apiSend`/`whatsappSend` come right after an agent step. A nested `if`/`switch` is the last step of its branch.",
+        "properties": {
+          "agent": {
+            "type": "string",
+            "description": "Agent id"
+          },
+          "task": {
+            "type": "string"
+          },
+          "interactive": {
+            "type": "boolean",
+            "description": "Ask the user until the step is done"
+          },
+          "humanExpert": {
+            "type": "string",
+            "description": "Phone of a human who answers (HITL)"
+          },
+          "doneKeywords": {
+            "type": "string",
+            "description": "Comma-separated words that end an interactive step"
+          },
+          "team": {
+            "$ref": "#/components/schemas/CrewBlueprintTeam"
+          },
+          "if": {
+            "type": "string",
+            "description": "Condition the crew evaluates"
+          },
+          "then": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrewBlueprintStep"
+            }
+          },
+          "else": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrewBlueprintStep"
+            }
+          },
+          "switch": {
+            "type": "string",
+            "description": "What the crew decides on"
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CrewBlueprintStep"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrewBlueprintStep"
+            }
+          },
+          "apiSend": {
+            "type": "object",
+            "required": [
+              "url"
+            ],
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "DELETE"
+                ],
+                "default": "POST"
+              },
+              "url": {
+                "type": "string",
+                "description": "Supports {{variables}} such as {{sender}}"
+              },
+              "headers": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "body": {
+                "description": "JSON object or string; supports {{previous_output}} and other variables"
+              },
+              "responseMapping": {
+                "type": "string",
+                "description": "Dot path of the response to pass on, e.g. result.id"
+              },
+              "wait": {
+                "type": "boolean",
+                "description": "Wait for the response (default true)"
+              }
+            }
+          },
+          "whatsappSend": {
+            "type": "object",
+            "required": [
+              "to",
+              "message"
+            ],
+            "properties": {
+              "to": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "CrewDelegation": {
+        "type": "object",
+        "description": "One question an orchestrator asked a team member, and the answer",
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "agentName": {
+            "type": "string"
+          },
+          "task": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationMs": {
+            "type": "integer"
+          }
+        }
+      },
+      "CrewRunStep": {
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "string"
+          },
+          "agentName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "stepNumber": {
+            "type": "integer"
+          },
+          "output": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "nodeType": {
+            "type": "string"
+          },
+          "delegations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrewDelegation"
+            }
+          }
+        }
+      },
+      "CrewRunResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "paused"
+            ]
+          },
+          "finalOutput": {
+            "type": "string",
+            "nullable": true
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrewRunStep"
+            }
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentQuestion": {
+            "type": "string",
+            "nullable": true,
+            "description": "A paused run: the question waiting for an answer"
+          },
+          "threadId": {
+            "type": "string",
+            "nullable": true
+          },
+          "waitingFor": {
+            "type": "string",
+            "enum": [
+              "expert",
+              "user"
+            ],
+            "nullable": true
+          },
+          "notified": {
+            "type": "boolean",
+            "description": "A paused run: whether whoever must answer was told"
+          }
+        }
+      },
       "CrewExecution": {
         "type": "object",
         "properties": {
@@ -12891,12 +13612,39 @@
             "enum": [
               "pending",
               "running",
+              "paused",
               "completed",
               "failed"
             ]
           },
-          "inputData": {},
-          "result": {},
+          "inputData": {
+            "description": "The message, sender, channel and threadId of the run"
+          },
+          "outputData": {
+            "description": "finalOutput, replyTo and, for a paused run, waitingFor and question",
+            "nullable": true
+          },
+          "stepResults": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "nullable": true,
+            "description": "Per-step results, with an orchestrator's delegations"
+          },
+          "errorMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Milliseconds"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"

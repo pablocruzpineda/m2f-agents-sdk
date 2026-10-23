@@ -111,11 +111,140 @@ export interface CrewCreateParams {
 export interface CrewExecution {
   id: string;
   crewId: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | string;
+  status: 'pending' | 'running' | 'paused' | 'completed' | 'failed' | string;
+  /** The message, sender, channel and threadId of the run. */
   inputData?: unknown;
-  result?: unknown;
+  /** finalOutput, replyTo and, for a paused run, waitingFor and question. */
+  outputData?: unknown;
+  /** Per-step results, with an orchestrator's delegations. */
+  stepResults?: unknown;
+  errorMessage?: string | null;
+  /** Milliseconds. */
+  duration?: number | null;
+  /** Only on what `crews.execute` returns: the run's answer and steps. */
+  result?: CrewRunResult;
   createdAt?: string;
   completedAt?: string | null;
+  [key: string]: unknown;
+}
+
+/** One question an orchestrator asked a team member, and the answer. */
+export interface CrewDelegation {
+  agentId: string | null;
+  agentName: string;
+  task: string;
+  output: string | null;
+  error: string | null;
+  durationMs?: number;
+}
+
+export interface CrewRunStep {
+  agentId: string;
+  agentName: string;
+  status: string;
+  stepNumber: number;
+  output?: string | null;
+  error?: string | null;
+  nodeType: string;
+  /** Orchestrator steps: whom the lead asked, what, and the answers. */
+  delegations?: CrewDelegation[];
+}
+
+/** What a crew run produced. */
+export interface CrewRunResult {
+  status: 'completed' | 'failed' | 'paused';
+  finalOutput: string | null;
+  steps: CrewRunStep[];
+  error: string | null;
+  /** A paused run: the question waiting for an answer. */
+  currentQuestion: string | null;
+  threadId: string | null;
+  /** A paused run: who must answer (a human expert, or the user). */
+  waitingFor: 'expert' | 'user' | null;
+  /** A paused run: whether whoever must answer was told. */
+  notified: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Crew blueprints: a crew described in plain terms, compiled by the server into
+// the same flow and diagram the console builder draws.
+// ---------------------------------------------------------------------------
+
+/** An orchestrator: the lead decides which members to ask and writes the answer. */
+export interface CrewBlueprintTeam {
+  /** Agent id of the lead; it thinks with its agent's Thinking model. */
+  lead: string;
+  /** 1–5 agent ids, the lead not among them. */
+  members: string[];
+  task?: string;
+  /** Most questions the lead may ask in one run (1–12). */
+  maxQuestions?: number;
+  /** Ask independent questions at the same time (default true). */
+  parallel?: boolean;
+}
+
+export interface CrewBlueprintApiSend {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  /** Supports {{variables}} such as {{sender}}. */
+  url: string;
+  headers?: Record<string, string>;
+  /** JSON object or string; supports {{previous_output}} and other variables. */
+  body?: string | Record<string, unknown> | unknown[];
+  /** Dot path of the response to pass on, e.g. "result.id". */
+  responseMapping?: string;
+  /** Wait for the response (default true). */
+  wait?: boolean;
+}
+
+/**
+ * One step. `apiSend` / `whatsappSend` come right after an agent step; a nested
+ * `if` / `switch` is the last step of its branch.
+ */
+export type CrewBlueprintStep =
+  | { agent: string; task?: string; interactive?: boolean; humanExpert?: string; doneKeywords?: string }
+  | { team: CrewBlueprintTeam }
+  | { if: string; then?: CrewBlueprintStep[]; else?: CrewBlueprintStep[] }
+  | {
+      switch: string;
+      cases: Array<{ value: string; description?: string; steps?: CrewBlueprintStep[] }>;
+      default?: CrewBlueprintStep[];
+    }
+  | { apiSend: CrewBlueprintApiSend }
+  | { whatsappSend: { to: string; message: string } };
+
+interface CrewBlueprintBase {
+  name: string;
+  description?: string;
+  input?: 'api' | 'whatsapp';
+  /** WhatsApp input: the device the crew answers on. */
+  inputDeviceId?: string;
+  output?: 'api' | 'whatsapp';
+  /** API output: where the answer is also POSTed. */
+  outputUrl?: string;
+  outputDeviceId?: string;
+  settings?: {
+    onError?: 'stop' | 'retry' | 'continue';
+    retries?: number;
+    stepTimeoutSeconds?: number;
+    passContext?: boolean;
+  };
+}
+
+/** A crew in plain terms: either a list of steps, or one team. */
+export type CrewBlueprint =
+  | (CrewBlueprintBase & { steps: CrewBlueprintStep[]; team?: never })
+  | (CrewBlueprintBase & { team: CrewBlueprintTeam; steps?: never });
+
+/** A dry run's answer: what would be created or changed. */
+export interface CompiledCrew {
+  name: string;
+  description?: string;
+  agentIds: string[];
+  executionFlow: unknown[];
+  workflowLayout: { nodes: unknown[]; edges: unknown[] };
+  inputConfig?: unknown;
+  outputConfig?: unknown;
+  executionConfig?: unknown;
   [key: string]: unknown;
 }
 

@@ -4,6 +4,7 @@ export { M2FError } from './errors.js';
 export * from './types.js';
 export { AgentsResource } from './resources/agents.js';
 export { CrewsResource } from './resources/crews.js';
+export type { BlueprintOptions, CreateTeamParams } from './resources/crews.js';
 export { DevicesResource } from './resources/devices.js';
 export { ToolsResource } from './resources/tools.js';
 export { ScheduledTasksResource } from './resources/scheduledTasks.js';

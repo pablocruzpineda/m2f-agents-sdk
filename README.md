@@ -87,7 +87,7 @@ The client exposes one resource per platform area:
 | Resource | Highlights |
 | --- | --- |
 | `m2f.agents` | `list` · `get` · `create` · `update` · `delete` · `execute` · `activities` · device assignment |
-| `m2f.crews` | multi-agent workflows: CRUD, `execute`, execution history |
+| `m2f.crews` | multi-agent workflows: create from a blueprint (steps, teams, branches), `createTeam`, `execute` with answer and delegations, run history |
 | `m2f.devices` | WhatsApp / SMS / email / web channels |
 | `m2f.tools` | custom Python tools: CRUD, `executePython` (sandbox) |
 | `m2f.scheduledTasks` | cron / interval / one-shot schedules for agents |
@@ -161,7 +161,9 @@ m2f org summary [--agent <agentId>] [--from <date>] [--to <date>] [--bucket <b>]
 m2f org activities [--agent <agentId>] [--limit <n>] [--json]
 
 m2f crews list|get|create|delete [--json]
-m2f crews run <crewId> --input <text> [--input-file <file>]
+m2f crews blueprint <file> [--crew <crewId>] [--dry-run]
+m2f crews create-team --name <name> --lead <agentId> --member <agentId...> [--task <text>] [--dry-run]
+m2f crews run <crewId> --input <text> [--input-file <file>] [--json]
 m2f crews executions <crewId> [--limit <n>]
 m2f crews execution <crewId> <executionId>
 

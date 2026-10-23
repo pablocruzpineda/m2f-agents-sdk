@@ -53,6 +53,7 @@ export function printJson(value: unknown): void {
 export function fail(error: unknown): never {
   if (error instanceof M2FError) {
     console.error(`Error (HTTP ${error.status}): ${error.message}`);
+    for (const problem of error.errors) console.error(`  - ${problem}`);
     if (error.requiredScope) {
       console.error(`Your API key is missing the "${error.requiredScope}" scope.`);
     }
