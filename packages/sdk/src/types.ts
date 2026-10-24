@@ -84,6 +84,13 @@ export interface ExecuteAgentParams {
   input: unknown;
   /** Max wait in milliseconds (1000–300000, default 120000). */
   timeout?: number;
+  /**
+   * Who the conversation is with (your own user, ticket or chat id, up to 200 characters). The agent keeps one memory
+   * per sessionId; without it and without `sender`, every call shares the same memory.
+   */
+  sessionId?: string;
+  /** The person writing (e.g. a phone number). Used as the memory key when there is no `sessionId`. */
+  sender?: string;
 }
 
 // ---------------------------------------------------------------------------

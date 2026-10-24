@@ -3327,6 +3327,16 @@
                     "type": "integer",
                     "description": "Max wait in milliseconds (1000–300000)",
                     "default": 120000
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "Who the conversation is with, e.g. your own user or ticket id. The agent keeps one memory per sessionId; without it (and without sender) every call shares the same memory."
+                  },
+                  "sender": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "The person writing, e.g. their phone number. Used as the memory key when there is no sessionId."
                   }
                 }
               }

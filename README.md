@@ -75,9 +75,11 @@ const agent = await m2f.agents.create({
   systemPrompt: 'You are a friendly customer support agent.',
 });
 
-// Run it and get the result
+// Run it and get the result. sessionId keeps one conversation (and memory) per person:
+// without it, every call to the agent shares the same memory.
 const { result } = await m2f.agents.execute(agent.id, {
   input: 'What are your opening hours?',
+  sessionId: 'customer-123',
 });
 console.log(result);
 ```
