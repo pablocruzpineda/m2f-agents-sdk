@@ -69,12 +69,34 @@ await m2f.voice.resume(agentId);
 `voice` takes a catalog id (`el-cristina`), a name (`Cristina`, accents
 optional) or any ElevenLabs library voice id.
 
+### When the agent answers
+
+By default the agent answers every call. A schedule makes it answer only
+outside office hours (or only during them). A call it does not take is
+refused before it is answered: it costs nothing and the caller hears a busy
+tone. It applies to calls to the number and from your PBX. Turning it off
+(`enabled: false`) keeps the hours and closed days.
+
+```ts
+await m2f.voice.updateLine(agentId, {
+  schedule: {
+    enabled: true,
+    answer: 'outside',              // or 'inside'
+    timezone: 'Europe/Madrid',
+    // Sunday first; up to two ranges a day; [] = closed
+    week: [[], [{ from: '09:00', to: '14:00' }, { from: '16:00', to: '19:00' }], /* Tue … Sat */ [], [], [], [], []],
+    closedDays: ['12-25', '01-01', '03-22/03-26'], // every year
+  },
+});
+```
+
 ## CLI
 
 ```
 m2f voice lines [--json]
 m2f voice line <agentId>
 m2f voice set <agentId> [--voice <id|name>] [--greeting <text>] [--number <e164>]
+m2f voice configure <agentId> --set '{"schedule":{"enabled":false}}'   # any setting, as JSON
 m2f voice pause <agentId>
 m2f voice resume <agentId>
 m2f voice call <agentId> <to> [--var key=value ...] [--wait] [--json]

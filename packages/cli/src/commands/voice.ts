@@ -192,7 +192,7 @@ export function registerVoiceCommands(program: Command): void {
 
   voice
     .command('configure <agentId>')
-    .description('Change any line setting with a JSON patch (transfer, hours, after-call actions, language, model, SIP…)')
+    .description('Change any line setting with a JSON patch (schedule, transfer, hours, after-call actions, language, model, SIP…)')
     .requiredOption('--set <json>', 'JSON object, e.g. \'{"transfer":{"enabled":true,"numbers":["+525511112222"]}}\', or @file.json')
     .option('--json', 'Output raw JSON')
     .action(async (agentId: string, opts: { set: string; json?: boolean }) => {

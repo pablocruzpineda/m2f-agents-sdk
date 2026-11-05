@@ -1035,12 +1035,36 @@ export interface VoiceTransferHours {
   to?: string;
 }
 
+/** Office hours, HH:mm. */
+export interface VoiceTimeRange {
+  from: string;
+  to: string;
+}
+
+/**
+ * When the agent answers incoming calls (to the number and from the PBX). Off = always.
+ * Outside it, calls are refused before they are answered: no cost, the caller hears busy.
+ * Turning it off keeps the hours and closed days.
+ */
+export interface VoiceSchedule {
+  enabled?: boolean;
+  /** "outside" = only outside office hours and on closed days; "inside" = only during office hours. */
+  answer?: 'outside' | 'inside';
+  /** IANA zone, e.g. Europe/Madrid. */
+  timezone?: string;
+  /** 7 lists, Sunday first, of up to 2 ranges each; [] = closed that day. Replaces the week. */
+  week?: VoiceTimeRange[][];
+  /** Holidays, every year: "MM-DD" or "MM-DD/MM-DD". The office is closed all day. Replaces the list. */
+  closedDays?: string[];
+}
+
 export interface VoiceLineConfig {
   language: string;
   outboundGreeting: string;
   hints: string[];
   llm: { provider: string; model: string; reasoningEffort: string };
   transfer: { enabled: boolean; numbers: string[]; timeoutSec: number; whisper: boolean; fallback: 'ai' | 'hangup'; hours: VoiceTransferHours };
+  schedule: Required<VoiceSchedule>;
   outbound: { purpose: string; triggerUrlSet: boolean };
   postCall: {
     whatsapp: { enabled: boolean; deviceId: string; to: string[]; toCaller: boolean };
@@ -1066,6 +1090,8 @@ export interface VoiceLineUpdate {
   hints?: string[];
   llm?: { provider?: string; model?: string; reasoningEffort?: 'none' | '' | 'minimal' | 'low' | 'medium' | 'high' };
   transfer?: { enabled?: boolean; numbers?: string[]; timeoutSec?: number; whisper?: boolean; fallback?: 'ai' | 'hangup'; hours?: VoiceTransferHours };
+  /** When the agent answers incoming calls. */
+  schedule?: VoiceSchedule;
   outbound?: { purpose?: string };
   postCall?: {
     whatsapp?: { enabled?: boolean; deviceId?: string; to?: string[]; toCaller?: boolean };

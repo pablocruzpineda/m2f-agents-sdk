@@ -26944,7 +26944,7 @@
         ],
         "summary": "Change the voice(s), greeting or call email, pause or resume, or move the line to another number",
         "operationId": "updateVoiceLine",
-        "description": "Only the fields you send change — every setting of the console's Voice section: voices, greetings, language, model, transfer to a person and its hours, outbound purpose, after-call WhatsApp / CRM note / webhook / email, the shared link's call button and calls from a PBX.",
+        "description": "Only the fields you send change — every setting of the console's Voice section: voices, greetings, language, model, when the agent answers (schedule and closed days), transfer to a person and its hours, outbound purpose, after-call WhatsApp / CRM note / webhook / email, the shared link's call button and calls from a PBX.",
         "parameters": [
           {
             "name": "agentId",
@@ -32890,6 +32890,63 @@
               }
             }
           },
+          "schedule": {
+            "type": "object",
+            "description": "When the agent answers incoming calls (phone and PBX). Off = always. Outside it the call is refused before it is answered (no cost; the caller hears busy). Turning it off keeps the hours and closed days",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "answer": {
+                "type": "string",
+                "enum": [
+                  "outside",
+                  "inside"
+                ],
+                "description": "\"outside\" = only outside office hours and on closed days; \"inside\" = only during office hours"
+              },
+              "timezone": {
+                "type": "string",
+                "example": "Europe/Madrid"
+              },
+              "week": {
+                "type": "array",
+                "minItems": 7,
+                "maxItems": 7,
+                "description": "Office hours per weekday, Sunday first; [] = closed that day. Replaces the week",
+                "items": {
+                  "type": "array",
+                  "maxItems": 2,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "from",
+                      "to"
+                    ],
+                    "properties": {
+                      "from": {
+                        "type": "string",
+                        "example": "09:00"
+                      },
+                      "to": {
+                        "type": "string",
+                        "example": "14:00"
+                      }
+                    }
+                  }
+                }
+              },
+              "closedDays": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "example": "03-22/03-26"
+                },
+                "description": "Holidays, every year: \"MM-DD\" or a range \"MM-DD/MM-DD\". The office is closed all day. Replaces the list"
+              }
+            }
+          },
           "outbound": {
             "type": "object",
             "properties": {
@@ -33017,6 +33074,11 @@
           "transfer": {
             "type": "object",
             "additionalProperties": true
+          },
+          "schedule": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "enabled, answer, timezone, week, closedDays — as in VoiceLineUpdate"
           },
           "outbound": {
             "type": "object",
