@@ -14,6 +14,11 @@ import { registerOrganizationCommands } from './commands/organization';
 import { registerArtifactCommands } from './commands/artifacts';
 import { registerVoiceCommands } from './commands/voice';
 import { registerPanelCommands } from './commands/panels';
+import { registerAppCommands } from './commands/apps';
+import { registerModelCommands } from './commands/models';
+import { registerTenantCommands } from './commands/tenant';
+import { registerDashboardCommands } from './commands/dashboard';
+import { registerMagicCommands, registerProfileCommands } from './commands/magic';
 
 const program = new Command();
 
@@ -34,6 +39,12 @@ registerToolCommands(program);
 registerTaskCommands(program);
 registerMcpCommands(program);
 registerKnowledgeCommands(program);
+registerAppCommands(program);
+registerModelCommands(program);
+registerTenantCommands(program);
+registerDashboardCommands(program);
+registerMagicCommands(program);
+registerProfileCommands(program);
 registerOrganizationCommands(program);
 registerArtifactCommands(program);
 registerVoiceCommands(program);

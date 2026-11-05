@@ -20,6 +20,11 @@ export interface CreateTeamParams extends CrewBlueprintTeam {
   description?: string;
 }
 
+/** The crew with the input webhook the API returns next to it. */
+function withWebhook(payload: { crew: Crew; inputWebhookUrl?: string | null }): Crew {
+  return payload.inputWebhookUrl === undefined ? payload.crew : { ...payload.crew, inputWebhookUrl: payload.inputWebhookUrl };
+}
+
 export class CrewsResource {
   constructor(private readonly http: HttpClient) {}
 
@@ -31,8 +36,8 @@ export class CrewsResource {
 
   /** Get a single crew by id. */
   async get(crewId: string): Promise<Crew> {
-    const res = await this.http.get<{ crew: Crew }>(`/crews/${crewId}`);
-    return res.payload!.crew;
+    const res = await this.http.get<{ crew: Crew; inputWebhookUrl?: string | null }>(`/crews/${crewId}`);
+    return withWebhook(res.payload!);
   }
 
   /** Create a new crew (multi-agent workflow). */
@@ -50,24 +55,24 @@ export class CrewsResource {
   async createFromBlueprint(blueprint: CrewBlueprint, options: BlueprintOptions & { dryRun: true }): Promise<CompiledCrew>;
   async createFromBlueprint(blueprint: CrewBlueprint, options?: BlueprintOptions): Promise<Crew>;
   async createFromBlueprint(blueprint: CrewBlueprint, options: BlueprintOptions = {}): Promise<Crew | CompiledCrew> {
-    const res = await this.http.post<{ crew: Crew | CompiledCrew }>(
+    const res = await this.http.post<{ crew: Crew | CompiledCrew; inputWebhookUrl?: string | null }>(
       '/crews/blueprint',
       { blueprint },
       { query: { dryRun: options.dryRun || undefined } }
     );
-    return res.payload!.crew;
+    return options.dryRun ? res.payload!.crew : withWebhook(res.payload as { crew: Crew; inputWebhookUrl?: string | null });
   }
 
   /** Replace a crew's steps, diagram, agents and settings with a blueprint. */
   async updateFromBlueprint(crewId: string, blueprint: CrewBlueprint, options: BlueprintOptions & { dryRun: true }): Promise<CompiledCrew>;
   async updateFromBlueprint(crewId: string, blueprint: CrewBlueprint, options?: BlueprintOptions): Promise<Crew>;
   async updateFromBlueprint(crewId: string, blueprint: CrewBlueprint, options: BlueprintOptions = {}): Promise<Crew | CompiledCrew> {
-    const res = await this.http.put<{ crew: Crew | CompiledCrew }>(
+    const res = await this.http.put<{ crew: Crew | CompiledCrew; inputWebhookUrl?: string | null }>(
       `/crews/${crewId}/blueprint`,
       { blueprint },
       { query: { dryRun: options.dryRun || undefined } }
     );
-    return res.payload!.crew;
+    return options.dryRun ? res.payload!.crew : withWebhook(res.payload as { crew: Crew; inputWebhookUrl?: string | null });
   }
 
   /** Create a crew that is one orchestrator (the lead) and its team of 1–5 agents. */
@@ -132,5 +137,37 @@ export class CrewsResource {
   /** Unassign a device from a crew. */
   async unassignDevice(crewId: string, deviceId: string): Promise<void> {
     await this.http.delete(`/crews/${crewId}/devices/${deviceId}`);
+  }
+
+  /** Every crew of your organisation (`list()` shows only yours). */
+  async listOrganization(): Promise<Crew[]> {
+    const res = await this.http.get<{ crews: Crew[] }>('/crews/organization');
+    return res.payload?.crews ?? [];
+  }
+
+  /** The crew as JSON — flow, layout, channels and copies of its agents — what the console's Export downloads. */
+  async export(crewId: string): Promise<Record<string, unknown>> {
+    return (await this.http.get<Record<string, unknown>>(`/crews/${encodeURIComponent(crewId)}/export`)).payload!;
+  }
+
+  /**
+   * Create a crew (and copies of its agents) from an export, here or in another account.
+   * They are created turned off (as in the console) unless `activate: true`; the answer lists
+   * `agentIds`, `importedAsInactive`, `next` and, with activate, `activation` per item.
+   */
+  async import(exportData: Record<string, unknown>, options: { activate?: boolean } = {}): Promise<Record<string, unknown> & {
+    agentIds: string[]; importedAsInactive: boolean; next: string;
+    activation?: Array<{ id: string; kind: 'crew' | 'agent'; name?: string; active: boolean; error?: string }>;
+  }> {
+    return (await this.http.post<Record<string, unknown> & { agentIds: string[]; importedAsInactive: boolean; next: string }>('/crews/import', { exportData, ...options })).payload!;
+  }
+
+  /**
+   * An existing crew (made here or in the console) as a blueprint, to change and save with
+   * `updateFromBlueprint`. `exact` is true when saving it unchanged would run the same;
+   * `differences` lists what a blueprint cannot keep. Saving redraws the diagram.
+   */
+  async getBlueprint(crewId: string): Promise<{ crewId: string; blueprint: CrewBlueprint; exact: boolean; differences: string[]; note: string }> {
+    return (await this.http.get<{ crewId: string; blueprint: CrewBlueprint; exact: boolean; differences: string[]; note: string }>(`/crews/${encodeURIComponent(crewId)}/blueprint`)).payload!;
   }
 }

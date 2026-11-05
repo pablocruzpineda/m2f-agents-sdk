@@ -1,6 +1,16 @@
 import type { HttpClient } from '../http.js';
+import { fileForm, type UploadData } from '../upload.js';
 import type {
   Agent,
+  AgentAppsParams,
+  AgentAppsResult,
+  AgentDocument,
+  EmbedCode,
+  EmbedOptions,
+  ShareLink,
+  ShareLinkCreateParams,
+  ShareLinkUpdateParams,
+  AgentDocumentUsage,
   AgentActions,
   AgentActionsParams,
   AgentActivity,
@@ -251,5 +261,106 @@ export class AgentsResource {
   async runTests(agentId: string, params: TestRunParams): Promise<TestRunStarted> {
     const res = await this.http.post<TestRunStarted>(`/agents/${agentId}/test-runs`, params);
     return res.payload!;
+  }
+
+  // ── The agent's own documents ─────────────────────────────
+
+  /** Documents the agent holds as its own, with their ingest state. */
+  async listDocuments(agentId: string): Promise<{ documents: AgentDocument[]; usage: AgentDocumentUsage }> {
+    const res = await this.http.get<{ documents: AgentDocument[]; usage: AgentDocumentUsage }>(
+      `/agents/${encodeURIComponent(agentId)}/documents`
+    );
+    return res.payload ?? { documents: [], usage: { totalSize: 0, totalChars: 0, maxSize: 0, maxChars: 0 } };
+  }
+
+  /**
+   * Give the agent a document of its own (PDF, DOCX, TXT, MD — 25 MB). Its
+   * text goes to the agent's PRIVATE graph, which it then reads instead of the
+   * shared one. Indexing runs in the background: poll listDocuments. Content
+   * the agent already has is refused with M2FError status 409.
+   */
+  async uploadDocument(
+    agentId: string,
+    data: UploadData,
+    filename: string
+  ): Promise<{ document: AgentDocument; usage: AgentDocumentUsage }> {
+    const res = await this.http.post<{ document: AgentDocument; usage: AgentDocumentUsage }>(
+      `/agents/${encodeURIComponent(agentId)}/documents`,
+      fileForm(data, filename),
+      { timeoutMs: 180_000 }
+    );
+    return res.payload!;
+  }
+
+  /** Remove a document (from the agent's graph too). Entries sharing its source go as well: see alsoRemoved. */
+  async deleteDocument(
+    agentId: string,
+    docId: string
+  ): Promise<{ deleted: string; alsoRemoved: string[]; usage: AgentDocumentUsage }> {
+    const res = await this.http.delete<{ deleted: string; alsoRemoved: string[]; usage: AgentDocumentUsage }>(
+      `/agents/${encodeURIComponent(agentId)}/documents/${encodeURIComponent(docId)}`
+    );
+    return res.payload!;
+  }
+
+  // ── The agent's apps ──────────────────────────────────────
+
+  /**
+   * Set the agent's apps and build what they need to run (an agent with apps
+   * listed but not built loads none). Check `warnings` and `integrations`.
+   */
+  async setApps(agentId: string, params: AgentAppsParams): Promise<AgentAppsResult> {
+    const res = await this.http.put<AgentAppsResult>(`/agents/${encodeURIComponent(agentId)}/apps`, params);
+    return res.payload!;
+  }
+
+  // ── Shared link and website embed ─────────────────────────
+
+  /** The agent's public chat link, its limits, and whether it shows the call button. */
+  async getShareLink(agentId: string): Promise<ShareLink> {
+    const res = await this.http.get<ShareLink>(`/agents/${encodeURIComponent(agentId)}/share-link`);
+    return res.payload!;
+  }
+
+  /** Create the link. With one already there, pass `regenerate: true` (the old URL stops working). */
+  async createShareLink(agentId: string, params: ShareLinkCreateParams = {}): Promise<ShareLink> {
+    const res = await this.http.post<ShareLink>(`/agents/${encodeURIComponent(agentId)}/share-link`, params);
+    return res.payload!;
+  }
+
+  /** Pause/resume or change limits; the URL stays the same. */
+  async updateShareLink(agentId: string, params: ShareLinkUpdateParams): Promise<ShareLink> {
+    const res = await this.http.patch<ShareLink>(`/agents/${encodeURIComponent(agentId)}/share-link`, params);
+    return res.payload!;
+  }
+
+  /** Delete the link: the URL and every embed using it stop working. */
+  async revokeShareLink(agentId: string): Promise<{ revoked: boolean }> {
+    const res = await this.http.delete<{ revoked: boolean }>(`/agents/${encodeURIComponent(agentId)}/share-link`);
+    return res.payload!;
+  }
+
+  /** The <script> tag that puts the agent's chat on a website. */
+  async embedCode(agentId: string, options: EmbedOptions = {}): Promise<EmbedCode> {
+    const res = await this.http.get<EmbedCode>(`/agents/${encodeURIComponent(agentId)}/embed`, {
+      query: { mode: options.mode, lang: options.lang, theme: options.theme, color: options.color },
+    });
+    return res.payload!;
+  }
+
+  // ── Export / import ───────────────────────────────────────
+
+  /** The agent as JSON — what the console's Export downloads. */
+  async export(agentId: string): Promise<Record<string, unknown>> {
+    return (await this.http.get<Record<string, unknown>>(`/agents/${encodeURIComponent(agentId)}/export`)).payload!;
+  }
+
+  /**
+   * Create an agent from an export (here or in another account). It is created turned off
+   * (as in the console) unless `activate: true`; the answer has `importedAsInactive` and `next`.
+   * App accounts and private documents are not carried over.
+   */
+  async import(exportData: Record<string, unknown>, options: { activate?: boolean } = {}): Promise<Record<string, unknown> & { importedAsInactive: boolean; next: string }> {
+    return (await this.http.post<Record<string, unknown> & { importedAsInactive: boolean; next: string }>('/agents/import', { exportData, ...options })).payload!;
   }
 }

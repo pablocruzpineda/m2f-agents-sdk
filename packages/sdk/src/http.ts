@@ -21,9 +21,17 @@ export interface RequestOptions {
 
 export class HttpClient {
   private readonly opts: HttpClientOptions;
+  /** Sent on every request of this client (e.g. agentId for an agent's own graph). */
+  private readonly defaultQuery: Record<string, string>;
 
-  constructor(opts: HttpClientOptions) {
+  constructor(opts: HttpClientOptions, defaultQuery: Record<string, string> = {}) {
     this.opts = opts;
+    this.defaultQuery = defaultQuery;
+  }
+
+  /** The same client with these query parameters on every request. */
+  withQuery(query: Record<string, string>): HttpClient {
+    return new HttpClient(this.opts, { ...this.defaultQuery, ...query });
   }
 
   async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<Envelope<T>> {
@@ -33,6 +41,7 @@ export class HttpClient {
     }
 
     const url = new URL(this.opts.baseUrl.replace(/\/$/, '') + path);
+    for (const [key, value] of Object.entries(this.defaultQuery)) url.searchParams.set(key, value);
     if (options.query) {
       for (const [key, value] of Object.entries(options.query)) {
         if (value !== undefined) url.searchParams.set(key, String(value));
@@ -43,17 +52,23 @@ export class HttpClient {
     const timeoutMs = options.timeoutMs ?? this.opts.timeoutMs;
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
+    // FormData goes as multipart: fetch sets the Content-Type with its boundary, so we must not.
+    const multipart = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const headers: Record<string, string> = {
+      'x-api-key': this.opts.apiKey,
+      'User-Agent': '@mind2flow/agents-sdk',
+      ...this.opts.headers,
+    };
+    if (!multipart) headers['Content-Type'] = 'application/json';
+
     let response: Response;
     try {
       response = await fetchImpl(url.toString(), {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.opts.apiKey,
-          'User-Agent': '@mind2flow/agents-sdk',
-          ...this.opts.headers,
-        },
-        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+        headers,
+        body: multipart
+          ? (options.body as FormData)
+          : options.body !== undefined ? JSON.stringify(options.body) : undefined,
         signal: controller.signal,
       });
     } catch (error) {

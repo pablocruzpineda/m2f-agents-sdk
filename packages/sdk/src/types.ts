@@ -104,6 +104,8 @@ export interface Crew {
   agents?: unknown[];
   workflow?: unknown;
   createdAt?: string;
+  /** API-input crews: the public webhook that runs the crew (the builder's Input node URL); null for WhatsApp input. */
+  inputWebhookUrl?: string | null;
   [key: string]: unknown;
 }
 
@@ -208,7 +210,7 @@ export interface CrewBlueprintApiSend {
  * `if` / `switch` is the last step of its branch.
  */
 export type CrewBlueprintStep =
-  | { agent: string; task?: string; interactive?: boolean; humanExpert?: string; doneKeywords?: string }
+  | { agent: string; task?: string; interactive?: boolean; interactionType?: 'user-approval' | 'system-response' | 'user-input' | 'manual-validation' | 'custom'; humanExpert?: string; doneKeywords?: string }
   | { team: CrewBlueprintTeam }
   | { if: string; then?: CrewBlueprintStep[]; else?: CrewBlueprintStep[] }
   | {
@@ -408,11 +410,90 @@ export interface KnowledgeDocument {
   filename: string;
   mime_type: string;
   size_bytes: number;
-  status: 'pending' | 'ingested' | 'skipped' | 'failed';
+  /** needs_mapping: a spreadsheet held until its columns are confirmed (knowledge.confirmSchema). */
+  status: 'pending' | 'needs_mapping' | 'ingested' | 'skipped' | 'failed';
   error?: string | null;
   episode_count: number;
+  /** Spreadsheets only: rows that reached the graph. */
+  record_count?: number | null;
   created_at: string;
   ingested_at?: string | null;
+}
+
+export type KnowledgeColumnType = 'text' | 'number' | 'date';
+
+export interface KnowledgeColumnMapping {
+  /** Header as written in the file — send it back unchanged. */
+  header: string;
+  /** Attribute name on the stored row (max 64 chars). */
+  field: string;
+  type?: KnowledgeColumnType;
+  include?: boolean;
+  /** Read-only: share of rows with a value (0–1). */
+  filled?: number | null;
+  /** Read-only: example values. */
+  samples?: string[];
+  invalid_count?: number;
+  invalid_samples?: string[];
+}
+
+/** How a spreadsheet is read. GraphOS proposes one on upload and holds the file until it is confirmed. */
+export interface KnowledgeTabularSchema {
+  filename: string;
+  headers: string[];
+  columns: KnowledgeColumnMapping[];
+  /** Field that names each row. */
+  name_field: string | null;
+  entity_type: string;
+  confirmed: boolean;
+  /** Why it still needs confirmation; "drift" means the file's columns changed. */
+  reason?: 'missing' | 'unconfirmed' | 'drift' | null;
+  row_count?: number | null;
+  sheet?: string | null;
+  sheets?: string[];
+  duplicate_count?: number;
+  conflicting_count?: number;
+  duplicates?: Array<Record<string, unknown>>;
+}
+
+export interface KnowledgeSchemaConfirmation {
+  /** Every column of the proposal, edited. Field names of included columns must be unique. */
+  columns: Array<Pick<KnowledgeColumnMapping, 'header' | 'field' | 'type' | 'include'>>;
+  /** Must be the field of an included column. */
+  name_field: string;
+  /** What each row is: Product (default), Property, Service… */
+  entity_type?: string;
+}
+
+export interface KnowledgeExactValue {
+  asked: string;
+  found: boolean;
+  /** The stored item that matched. */
+  name?: string;
+  values?: Record<string, unknown>;
+  /** Several items matched: their names. */
+  candidates?: string[];
+}
+
+export interface KnowledgeRecord {
+  uuid: string | null;
+  name: string | null;
+  values: Record<string, unknown>;
+}
+
+export interface KnowledgeRecords {
+  columns: string[];
+  rows: KnowledgeRecord[];
+  total: number;
+}
+
+export interface KnowledgeRecordsQuery {
+  /** Entity type, e.g. Product. */
+  label?: string;
+  /** Search by name. */
+  q?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export interface KnowledgeJob {
@@ -940,10 +1021,61 @@ export interface VoiceLine {
   greeting: string;
   transferEnabled: boolean;
   outboundPurpose: string;
+  /** Every setting, as the console shows it — only from getLine / updateLine. Secrets are reported as set, never returned. */
+  config?: VoiceLineConfig;
+}
+
+export interface VoiceTransferHours {
+  enabled?: boolean;
+  timezone?: string;
+  /** 0 = Sunday. */
+  days?: number[];
+  /** HH:mm */
+  from?: string;
+  to?: string;
+}
+
+export interface VoiceLineConfig {
+  language: string;
+  outboundGreeting: string;
+  hints: string[];
+  llm: { provider: string; model: string; reasoningEffort: string };
+  transfer: { enabled: boolean; numbers: string[]; timeoutSec: number; whisper: boolean; fallback: 'ai' | 'hangup'; hours: VoiceTransferHours };
+  outbound: { purpose: string; triggerUrlSet: boolean };
+  postCall: {
+    whatsapp: { enabled: boolean; deviceId: string; to: string[]; toCaller: boolean };
+    crmNote: { enabled: boolean };
+    webhook: { enabled: boolean; url: string; secretSet: boolean };
+    email: { enabled: boolean; to: string[] };
+  };
+  webCall: { enabled: boolean };
+  sip: { enabled: boolean; countryCode: string; address: string; credentialsSet: boolean };
 }
 
 export interface VoiceLineUpdate {
   enabled?: boolean;
+  /** Show or hide the call button on the agent's shared link and embed (creates/removes the pieces in your Twilio account). */
+  webCall?: { enabled: boolean };
+  voiceGender?: 'female' | 'male' | null;
+  alternateVoices?: Array<string | { voice: string; gender?: 'female' | 'male' | null; greeting?: string | null }>;
+  email?: { enabled?: boolean; to?: string[] };
+  outboundGreeting?: string;
+  /** es-MX, en-US… or "multi" (automatic; needs ElevenLabs voices). */
+  language?: string;
+  /** Words the transcription should expect. */
+  hints?: string[];
+  llm?: { provider?: string; model?: string; reasoningEffort?: 'none' | '' | 'minimal' | 'low' | 'medium' | 'high' };
+  transfer?: { enabled?: boolean; numbers?: string[]; timeoutSec?: number; whisper?: boolean; fallback?: 'ai' | 'hangup'; hours?: VoiceTransferHours };
+  outbound?: { purpose?: string };
+  postCall?: {
+    whatsapp?: { enabled?: boolean; deviceId?: string; to?: string[]; toCaller?: boolean };
+    crmNote?: { enabled?: boolean };
+    /** secret is write-only. */
+    webhook?: { enabled?: boolean; url?: string; secret?: string };
+    email?: { enabled?: boolean; to?: string[] };
+  };
+  /** Calls from the customer's PBX; then sipCredentials(). */
+  sip?: { enabled?: boolean; countryCode?: string };
   /** Catalog id (`el-cristina`), name (`Cristina`) or an ElevenLabs voice id. */
   voice?: string;
   greeting?: string;
@@ -1119,4 +1251,245 @@ export interface PanelSendResult {
   messageType: string;
   /** The gateway's answer; for QR numbers `key.id` is the WhatsApp message id. */
   payload: unknown;
+}
+
+// ---------------------------------------------------------------------------
+// An agent's own documents
+// ---------------------------------------------------------------------------
+
+export type AgentDocumentIngestStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'needs_mapping' | 'unknown';
+
+/** A document an agent holds as its own; its text lives in the agent's private graph. */
+export interface AgentDocument {
+  id: string;
+  name: string;
+  size: number;
+  charCount: number;
+  pageCount?: number | null;
+  uploadedAt: string;
+  graphosSourceId?: string | null;
+  graphosDocumentId?: string | null;
+  /** failed: see ingestError — the agent keeps answering from the document's text meanwhile. */
+  ingestStatus: AgentDocumentIngestStatus;
+  ingestError: string | null;
+}
+
+export interface AgentDocumentUsage {
+  totalSize: number;
+  totalChars: number;
+  maxSize: number;
+  maxChars: number;
+}
+
+// ---------------------------------------------------------------------------
+// Apps (Composio)
+// ---------------------------------------------------------------------------
+
+/** How an app connects: a sign-in link, a key, the account's own OAuth app, not at all, or as an MCP server. */
+export type AppConnectionMethod = 'sign_in' | 'credentials' | 'own_app' | 'not_supported' | 'mcp';
+
+export interface CatalogApp {
+  slug: string;
+  name: string;
+  description?: string;
+  connection: AppConnectionMethod;
+  logo?: string;
+  [key: string]: unknown;
+}
+
+export interface AppSearchResult {
+  apps: CatalogApp[];
+  total: number;
+  notes?: string[];
+  [key: string]: unknown;
+}
+
+export interface AppConnection {
+  id: string;
+  toolkit: string | null;
+  /** ACTIVE works; INITIATED means a sign-in link was created but not completed. */
+  status: string;
+  createdAt: string | null;
+  alias: string | null;
+  label: string | null;
+}
+
+export interface AppConnectLink {
+  /** Open this in a browser to sign in to the app. */
+  redirectUrl: string;
+  connectedAccountId: string | null;
+  expiresAt: string | null;
+  toolkit: string;
+}
+
+export interface AgentAppsParams {
+  /** The full list of app slugs; replaces the agent's current one. */
+  toolkits: string[];
+  /** Actions to enable (max 128). Omit to keep the current selection. */
+  selectedActions?: string[];
+  /** Use one specific account per app (universal agents only). Omit to keep current pins; [] removes them. */
+  pinned?: Array<{ toolkit: string; connectedAccountId: string }>;
+}
+
+export interface AgentAppsResult {
+  /** What is stored on the agent (toolsConfig.knowledgebase.composio). */
+  apps: Record<string, unknown>;
+  /** Anything that could not be set up. Empty when every app is ready. */
+  warnings: string[];
+  /** The live check, as agents.integrations() returns it. */
+  integrations: AgentIntegrations | null;
+}
+
+// ---------------------------------------------------------------------------
+// Shared link and website embed
+// ---------------------------------------------------------------------------
+
+export interface ShareLinkConfig {
+  isActive: boolean;
+  maxRequests: number | null;
+  requestCount?: number;
+  createdAt?: string;
+  expiresAt?: string | null;
+}
+
+export interface ShareLink {
+  agentId: string;
+  hasShareLink: boolean;
+  shareToken: string | null;
+  /** The public chat page (on the account's verified custom domain when it has one). */
+  url: string | null;
+  config: ShareLinkConfig | null;
+  /** Whether the page shows the call button. */
+  webCall: boolean;
+}
+
+export interface ShareLinkCreateParams {
+  maxRequests?: number | null;
+  expiresAt?: string | null;
+  /** Needed when a link exists: the old URL and every embed using it stop working. */
+  regenerate?: boolean;
+}
+
+export interface ShareLinkUpdateParams {
+  isActive?: boolean;
+  maxRequests?: number | null;
+  expiresAt?: string | null;
+}
+
+export interface EmbedOptions {
+  mode?: 'bubble' | 'inline';
+  lang?: 'es' | 'en';
+  theme?: 'light' | 'dark';
+  /** #rrggbb; defaults to the account's brand colour. */
+  color?: string;
+}
+
+export interface EmbedCode {
+  /** Paste before </body>. */
+  snippet: string;
+  url: string;
+  mode: 'bubble' | 'inline';
+  lang: 'es' | 'en';
+  theme: 'light' | 'dark';
+  color: string;
+}
+
+// ── Voice provisioning ──────────────────────────────────────────────────────
+
+/** Money and irreversible changes need it: `{ confirm: true }`. */
+export interface Confirmed { confirm: true }
+
+export interface VoiceAccount {
+  provider: string;
+  accountSid: string;
+  status: string;
+  managed?: { plan: 'basic' | 'pro'; status: string; viaTenant: boolean };
+  [key: string]: unknown;
+}
+
+export interface TwilioNumber {
+  sid: string;
+  phoneNumber: string;
+  friendlyName: string;
+  agentId: string | null;
+  agentName: string | null;
+  [key: string]: unknown;
+}
+
+export interface AvailableNumber {
+  phoneNumber: string;
+  friendlyName: string;
+  locality: string;
+  region: string;
+}
+
+export interface SipCredentials {
+  enabled: boolean;
+  countryCode: string;
+  address: string;
+  domain: string;
+  username: string;
+  password: string;
+}
+
+/** GET /voice/managed — plans, eligibility (a saved card), and the current plan. */
+export type ManagedLineOffer = Record<string, unknown> & {
+  available: boolean;
+  eligible: boolean;
+  reason: string;
+  plans: Array<{ id: 'basic' | 'pro'; name: string; price: number; minutes: number; numbers: number }>;
+  line: Record<string, unknown> | null;
+};
+
+// ---------------------------------------------------------------------------
+// Linking WhatsApp (QR / pairing code) and the Meta Cloud API
+// ---------------------------------------------------------------------------
+
+export interface WhatsAppPairing {
+  pairingId: string;
+  method: 'qr' | 'code';
+  /** PNG data URL — scan from WhatsApp → Linked devices → Link a device. Expires in ~20 s. */
+  qr?: string;
+  /** Type it in WhatsApp → Linked devices → Link with phone number. */
+  pairingCode?: string;
+  next: string;
+}
+
+export interface WhatsAppPairingStatus {
+  connected: boolean;
+  state: string;
+  phoneNumber: string | null;
+  profileName: string | null;
+  /** True on the call that recorded the connection. */
+  recorded?: boolean;
+}
+
+export interface WhatsAppLinkStatus {
+  connected: boolean;
+  /** baileys = QR / pairing code; cloud = Meta Cloud API; null = not linked. */
+  channel: 'baileys' | 'cloud' | null;
+  phoneNumber: string | null;
+  state: string;
+  profileName?: string | null;
+  profilePictureUrl?: string | null;
+  detail?: string;
+}
+
+export interface MetaInspection {
+  inspectionId: string;
+  numbers: Array<Record<string, unknown> & { id: string; displayPhoneNumber: string; linked: boolean }>;
+  token: Record<string, unknown>;
+  existingWebhook: Record<string, unknown> | null;
+  [key: string]: unknown;
+}
+
+export interface MetaBusinessProfileUpdate {
+  about?: string;
+  description?: string;
+  address?: string;
+  email?: string;
+  vertical?: string;
+  websites?: string[];
+  /** JPEG/PNG data URL. */
+  picture?: string;
 }

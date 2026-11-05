@@ -1,5 +1,8 @@
 import type { HttpClient } from '../http.js';
-import type { Voice, VoiceCall, VoiceCallParams, VoiceCallStarted, VoiceLine, VoiceLineUpdate, VoicePricing } from '../types.js';
+import type {
+  AvailableNumber, Confirmed, ManagedLineOffer, SipCredentials, TwilioNumber, Voice, VoiceAccount,
+  VoiceCall, VoiceCallParams, VoiceCallStarted, VoiceLine, VoiceLineUpdate, VoicePricing,
+} from '../types.js';
 
 /**
  * Phone calls with your agents, on your own Twilio account. Connect Twilio
@@ -89,5 +92,98 @@ export class VoiceResource {
   async pricing(): Promise<VoicePricing> {
     const res = await this.http.get<VoicePricing>('/voice/pricing');
     return res.payload!;
+  }
+
+  // ── The line: actions ────────────────────────────────────
+
+  /** Take the line off the agent (the number stays in Twilio). */
+  async removeLine(agentId: string): Promise<{ removed: boolean }> {
+    return (await this.http.delete<{ removed: boolean }>(`/voice/agents/${encodeURIComponent(agentId)}`)).payload!;
+  }
+
+  /** Send a sample after-call payload to the line's webhook. */
+  async testWebhook(agentId: string): Promise<{ status: number }> {
+    return (await this.http.post<{ status: number }>(`/voice/agents/${encodeURIComponent(agentId)}/test-webhook`)).payload!;
+  }
+
+  /** Send a sample after-call email to the line's recipients. */
+  async testEmail(agentId: string): Promise<Record<string, unknown>> {
+    return (await this.http.post<Record<string, unknown>>(`/voice/agents/${encodeURIComponent(agentId)}/test-email`)).payload!;
+  }
+
+  /** A new trigger URL (a CRM posts to it to make the agent call). The old one stops working; keep it secret. */
+  async rotateTrigger(agentId: string, confirm: Confirmed): Promise<{ triggerUrl: string }> {
+    return (await this.http.post<{ triggerUrl: string }>(`/voice/agents/${encodeURIComponent(agentId)}/trigger-token`, confirm)).payload!;
+  }
+
+  /** What the customer's PBX needs to forward calls to the agent (after sip.enabled). */
+  async sipCredentials(agentId: string): Promise<SipCredentials> {
+    return (await this.http.get<SipCredentials>(`/voice/agents/${encodeURIComponent(agentId)}/sip-credentials`)).payload!;
+  }
+
+  /** Find an ElevenLabs library voice by id. */
+  async lookupVoice(id: string): Promise<Record<string, unknown>> {
+    return (await this.http.get<Record<string, unknown>>('/voice/voices/lookup', { query: { id } })).payload!;
+  }
+
+  // ── The account's own Twilio ─────────────────────────────
+
+  async account(): Promise<VoiceAccount | null> {
+    return (await this.http.get<VoiceAccount | null>('/voice/account')).payload ?? null;
+  }
+
+  /** Connect the account's own Twilio (checked with Twilio, stored encrypted). */
+  async connectTwilio(accountSid: string, authToken: string): Promise<VoiceAccount> {
+    return (await this.http.put<VoiceAccount>('/voice/account', { accountSid, authToken })).payload!;
+  }
+
+  /** Disconnect Twilio: every voice line of the account is removed. */
+  async disconnectTwilio(confirm: Confirmed): Promise<{ removed: boolean }> {
+    return (await this.http.request<{ removed: boolean }>('DELETE', '/voice/account', { body: confirm })).payload!;
+  }
+
+  async numbers(): Promise<TwilioNumber[]> {
+    return (await this.http.get<TwilioNumber[]>('/voice/numbers')).payload ?? [];
+  }
+
+  async searchNumbers(query: { country: string; type?: 'local' | 'mobile' | 'tollFree'; areaCode?: string; contains?: string }): Promise<AvailableNumber[]> {
+    return (await this.http.get<AvailableNumber[]>('/voice/numbers/available', { query })).payload ?? [];
+  }
+
+  /** Buy a number (Twilio charges it monthly), optionally putting an agent on it. */
+  async buyNumber(params: { phoneNumber: string; agentId?: string } & Confirmed): Promise<Record<string, unknown>> {
+    return (await this.http.post<Record<string, unknown>>('/voice/numbers/purchase', params)).payload!;
+  }
+
+  // ── The line Mind2Flow manages ───────────────────────────
+
+  async managedLine(): Promise<ManagedLineOffer> {
+    return (await this.http.get<ManagedLineOffer>('/voice/managed')).payload!;
+  }
+
+  /** Subscribe (charged monthly to the saved card). */
+  async subscribeManaged(params: { plan: 'basic' | 'pro' } & Confirmed): Promise<ManagedLineOffer> {
+    return (await this.http.post<ManagedLineOffer>('/voice/managed/subscribe', params)).payload!;
+  }
+
+  async changeManagedPlan(params: { plan: 'basic' | 'pro' } & Confirmed): Promise<ManagedLineOffer> {
+    return (await this.http.post<ManagedLineOffer>('/voice/managed/change', params)).payload!;
+  }
+
+  async cancelManaged(confirm: Confirmed): Promise<ManagedLineOffer> {
+    return (await this.http.post<ManagedLineOffer>('/voice/managed/cancel', confirm)).payload!;
+  }
+
+  async switchManagedToOwn(confirm: Confirmed): Promise<ManagedLineOffer> {
+    return (await this.http.post<ManagedLineOffer>('/voice/managed/switch-to-own', confirm)).payload!;
+  }
+
+  async readyNumbers(): Promise<{ numbers: Array<Record<string, unknown>>; included: boolean }> {
+    return (await this.http.get<{ numbers: Array<Record<string, unknown>>; included: boolean }>('/voice/managed/ready-numbers')).payload!;
+  }
+
+  /** Take a ready number (extra numbers beyond the plan are charged monthly). */
+  async claimReadyNumber(params: { phoneNumber: string; agentId?: string } & Confirmed): Promise<Record<string, unknown>> {
+    return (await this.http.post<Record<string, unknown>>('/voice/managed/ready-numbers/claim', params)).payload!;
   }
 }

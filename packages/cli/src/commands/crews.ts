@@ -91,6 +91,7 @@ export function registerCrewCommands(program: Command): void {
         }
         console.log(opts.crew ? `Crew ${opts.crew} updated.` : `Crew created: ${crew.id}`);
         console.log(`Try it: m2f crews run ${opts.crew ?? crew.id} --input "..."`);
+        if (typeof crew.inputWebhookUrl === 'string') console.log(`Input webhook (public, POST): ${crew.inputWebhookUrl}`);
       } catch (error) {
         fail(error);
       }
@@ -125,6 +126,7 @@ export function registerCrewCommands(program: Command): void {
         }
         const crew = await crews.createTeam(params);
         console.log(`Crew created: ${crew.id}`);
+        if (typeof crew.inputWebhookUrl === 'string') console.log(`Input webhook (public, POST): ${crew.inputWebhookUrl}`);
       } catch (error) {
         fail(error);
       }
@@ -193,6 +195,66 @@ export function registerCrewCommands(program: Command): void {
     .action(async (crewId: string, executionId: string) => {
       try {
         printJson(await getClient().crews.getExecution(crewId, executionId));
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  crews
+    .command('org')
+    .description('Every crew of your organisation')
+    .action(async () => {
+      try {
+        printJson(await getClient().crews.listOrganization());
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  crews
+    .command('export <crewId>')
+    .description('Save the crew as JSON (flow + copies of its agents)')
+    .option('-o, --out <file>', 'Write to a file instead of stdout')
+    .action(async (crewId: string, o: { out?: string }) => {
+      try {
+        const data = await getClient().crews.export(crewId);
+        if (o.out) { fs.writeFileSync(o.out, JSON.stringify(data, null, 2)); console.log(`Saved ${o.out}`); } else printJson(data);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  crews
+    .command('import <file>')
+    .description('Create a crew from an export JSON file (created turned off, with its agents, unless --activate)')
+    .option('--activate', 'Turn the crew and its agents on right after importing')
+    .action(async (file: string, o: { activate?: boolean }) => {
+      try {
+        const raw: unknown = JSON.parse(fs.readFileSync(file, 'utf-8'));
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Expected a crew export JSON object');
+        const r = await getClient().crews.import(raw as Record<string, unknown>, { activate: o.activate });
+        printJson(r);
+        console.error(r.importedAsInactive ? `Not all on yet. ${r.next}` : r.next);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  crews
+    .command('get-blueprint <crewId>')
+    .description('Read a crew (also one made in the console) as a blueprint to edit and save with "crews blueprint <file> --crew <id>"')
+    .option('-o, --out <file>', 'Write the blueprint to a file')
+    .action(async (crewId: string, o: { out?: string }) => {
+      try {
+        const got = await getClient().crews.getBlueprint(crewId);
+        if (o.out) {
+          fs.writeFileSync(o.out, JSON.stringify(got.blueprint, null, 2));
+          console.log(`Saved ${o.out}`);
+        } else {
+          printJson(got.blueprint);
+        }
+        console.error(got.exact ? 'Exact: saving it unchanged runs the same.' : `Not exact:\n- ${got.differences.join('\n- ')}`);
+        console.error('Saving redraws the diagram (positions moved by hand are not kept).');
       } catch (error) {
         fail(error);
       }

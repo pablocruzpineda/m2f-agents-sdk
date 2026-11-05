@@ -10,6 +10,11 @@ import { OrganizationResource } from './resources/organization.js';
 import { ArtifactsResource } from './resources/artifacts.js';
 import { VoiceResource } from './resources/voice.js';
 import { PanelsResource } from './resources/panels.js';
+import { AppsResource } from './resources/apps.js';
+import { ModelsResource } from './resources/models.js';
+import { TenantResource } from './resources/tenant.js';
+import { DashboardResource } from './resources/dashboard.js';
+import { MagicResource } from './resources/magic.js';
 
 export const DEFAULT_BASE_URL = 'https://api.mind2flow.io/api/v1';
 
@@ -53,6 +58,16 @@ export class M2FClient {
   readonly voice: VoiceResource;
   /** For external panels: subscribe to a WhatsApp device's traffic and send through it. */
   readonly panels: PanelsResource;
+  /** External apps: search the catalog, connect accounts. Attach them with agents.setApps(). */
+  readonly apps: AppsResource;
+  /** LLM providers and their model ids. */
+  readonly models: ModelsResource;
+  /** White-label reselling (TENANT) and platform administration (ADMIN). */
+  readonly tenant: TenantResource;
+  /** Dashboard reporting: consumption, credits, token usage, subaccount metrics. */
+  readonly dashboard: DashboardResource;
+  /** TENANTS: Magic packages, signup links and redemptions. */
+  readonly magic: MagicResource;
 
   constructor(options: M2FClientOptions) {
     if (!options.apiKey) {
@@ -78,5 +93,10 @@ export class M2FClient {
     this.knowledge = new KnowledgeResource(http);
     this.voice = new VoiceResource(http);
     this.panels = new PanelsResource(http);
+    this.apps = new AppsResource(http);
+    this.models = new ModelsResource(http);
+    this.tenant = new TenantResource(http);
+    this.dashboard = new DashboardResource(http);
+    this.magic = new MagicResource(http);
   }
 }

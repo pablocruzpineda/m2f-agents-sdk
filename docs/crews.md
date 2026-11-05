@@ -49,7 +49,7 @@ await m2f.crews.createTeam({
 
 | Step | Shape | Notes |
 |---|---|---|
-| Agent | `{ agent, task?, interactive?, humanExpert?, doneKeywords? }` | `interactive` keeps asking the user until done; `humanExpert` (a phone) makes a person answer the step |
+| Agent | `{ agent, task?, interactive?, interactionType?, humanExpert?, doneKeywords? }` | `interactive` keeps asking the user until done; `interactionType` is the builder's Interaction Type (`user-approval` default, `system-response`, `user-input`, `manual-validation`, `custom`); `humanExpert` (a phone) makes a person answer the step |
 | Team | `{ team: { lead, members, task?, maxQuestions?, parallel? } }` | 1–5 members, the lead not among them; `maxQuestions` 1–12; `parallel` (default true) asks independent questions at the same time |
 | If | `{ if, then?, else? }` | the condition is evaluated by the crew; empty branches go straight on |
 | Switch | `{ switch, cases: [{ value, description?, steps? }], default? }` | case values must be distinct |
@@ -90,6 +90,29 @@ try {
 
 ```ts
 await m2f.crews.updateFromBlueprint(crewId, blueprint);
+```
+
+To change one thing in an existing crew — also one built in the console — read
+it as a blueprint first, edit it, and save it back:
+
+```ts
+const { blueprint, exact, differences } = await m2f.crews.getBlueprint(crewId);
+if (!exact) console.warn(differences); // what a blueprint cannot keep
+blueprint.steps!.push({ agent: reviewerId, task: 'Check the reply' });
+await m2f.crews.updateFromBlueprint(crewId, blueprint);
+```
+
+`exact` is true when saving the blueprint unchanged would run the same flow.
+Saving redraws the diagram: positions moved by hand in the console are not kept.
+
+A crew with API input has a public webhook (`inputWebhookUrl` on `get`, and on
+what `createFromBlueprint` / `updateFromBlueprint` return): any system can POST
+a message there to run the crew, without a key — keep it private. Runs with your
+key go through `execute`.
+
+```bash
+m2f crews get-blueprint <crewId> -o crew.json   # edit crew.json
+m2f crews blueprint crew.json --crew <crewId>
 ```
 
 ## Running

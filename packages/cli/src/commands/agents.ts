@@ -1,7 +1,9 @@
 import { Command } from 'commander';
 import fs from 'fs';
+import path from 'path';
 import { getClient } from '../config';
 import { printTable, printJson, printAgentBreakdown, fail } from '../output';
+import { parseList, parsePin } from './apps';
 
 export function registerAgentCommands(program: Command): void {
   const agents = program.command('agents').description('Manage and execute AI agents');
@@ -454,6 +456,216 @@ export function registerAgentCommands(program: Command): void {
           ['verdict', 'case', 'actions', 'reason']
         );
         console.log(`\nStatus: ${artifact.status}. Full results: m2f artifacts get ${artifact.id}`);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  // ── The agent's own documents ────────────────────────────
+
+  const docs = agents.command('docs').description('Documents an agent holds as its own (its private knowledge graph)');
+
+  docs
+    .command('list <agentId>')
+    .description('List the agent\'s documents and their indexing state')
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, opts: { json?: boolean }) => {
+      try {
+        const { documents, usage } = await getClient().agents.listDocuments(agentId);
+        if (opts.json) return printJson({ documents, usage });
+        printTable(
+          documents.map((d) => ({ id: d.id, name: d.name, status: d.ingestStatus, chars: d.charCount, error: d.ingestError ?? '' })),
+          ['id', 'name', 'status', 'chars', 'error']
+        );
+        console.log(`${(usage.totalSize / 1024 / 1024).toFixed(1)} of ${(usage.maxSize / 1024 / 1024).toFixed(0)} MB, ${usage.totalChars} of ${usage.maxChars} characters`);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  docs
+    .command('upload <agentId> <file>')
+    .description('Give the agent a document of its own (PDF, DOCX, TXT, MD — 25 MB); it then reads its own graph')
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, file: string, opts: { json?: boolean }) => {
+      try {
+        const result = await getClient().agents.uploadDocument(agentId, fs.readFileSync(file), path.basename(file));
+        if (opts.json) return printJson(result);
+        console.log(`Uploaded ${result.document.name} (${result.document.id}) — indexing in the background.`);
+        console.log(`Check it with: m2f agents docs list ${agentId}`);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  docs
+    .command('rm <agentId> <docId>')
+    .description('Remove a document from the agent (and from its graph)')
+    .option('--yes', 'Skip confirmation')
+    .action(async (agentId: string, docId: string, opts: { yes?: boolean }) => {
+      try {
+        if (!opts.yes) {
+          console.error('This removes the document and what the agent learned from it. Re-run with --yes to confirm.');
+          process.exit(1);
+        }
+        const result = await getClient().agents.deleteDocument(agentId, docId);
+        console.log(`Document ${result.deleted} deleted.`);
+        if (result.alsoRemoved.length) console.log(`Also removed (they shared its source): ${result.alsoRemoved.join(', ')}`);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  // ── The agent's apps ─────────────────────────────────────
+
+  const agentApps = agents.command('apps').description('The apps an agent uses');
+
+  agentApps
+    .command('set <agentId>')
+    .description('Set the agent\'s apps and build what they need to run (replaces the list)')
+    .requiredOption('--toolkits <list>', 'Comma-separated app slugs, e.g. gmail,googlesheets')
+    .option('--actions <list>', 'Comma-separated action names to enable (omit to keep the current selection)')
+    .option('--pin <app=connectionId>', 'Use this connected account for an app (repeatable; universal agents)', (v: string, prev: string[]) => [...prev, v], [])
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, opts: { toolkits: string; actions?: string; pin: string[]; json?: boolean }) => {
+      try {
+        const result = await getClient().agents.setApps(agentId, {
+          toolkits: parseList(opts.toolkits),
+          ...(opts.actions !== undefined ? { selectedActions: parseList(opts.actions) } : {}),
+          ...(opts.pin.length ? { pinned: opts.pin.map(parsePin) } : {}),
+        });
+        if (opts.json) return printJson(result);
+        console.log(`Apps set: ${(result.apps.toolkits as string[] | undefined)?.join(', ') || '(none)'}`);
+        for (const w of result.warnings) console.log(`Warning: ${w}`);
+        const issues = (result.integrations as { issues?: string[] } | null)?.issues ?? [];
+        for (const i of issues) console.log(`Issue: ${i}`);
+        if (!result.warnings.length && !issues.length) console.log('Everything is wired.');
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  // ── Shared link and website embed ────────────────────────
+
+  const share = agents.command('share').description('The agent\'s public chat link');
+
+  const printLink = (l: { url: string | null; config: { isActive: boolean; maxRequests: number | null; requestCount?: number; expiresAt?: string | null } | null; webCall: boolean }) => {
+    if (!l.url) return console.log('No shared link. Create one with: m2f agents share create <agentId>');
+    const c = l.config;
+    console.log(l.url);
+    if (c) console.log(`${c.isActive ? 'active' : 'PAUSED'} · ${c.requestCount ?? 0}${c.maxRequests ? ` of ${c.maxRequests}` : ''} messages${c.expiresAt ? ` · expires ${c.expiresAt}` : ''} · call button ${l.webCall ? 'on' : 'off'}`);
+  };
+  const limitOpts = (o: { max?: string; expires?: string }) => ({
+    ...(o.max !== undefined ? { maxRequests: o.max === 'none' ? null : parseInt(o.max, 10) } : {}),
+    ...(o.expires !== undefined ? { expiresAt: o.expires === 'none' ? null : o.expires } : {}),
+  });
+
+  share
+    .command('get <agentId>')
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, opts: { json?: boolean }) => {
+      try {
+        const l = await getClient().agents.getShareLink(agentId);
+        if (opts.json) return printJson(l);
+        printLink(l);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  share
+    .command('create <agentId>')
+    .description('Create the link (--regenerate replaces an existing one: the old URL stops working)')
+    .option('--max <n>', 'Maximum messages (none = no limit)')
+    .option('--expires <date>', 'ISO date when it stops working')
+    .option('--regenerate', 'Replace the existing link')
+    .action(async (agentId: string, opts: { max?: string; expires?: string; regenerate?: boolean }) => {
+      try {
+        printLink(await getClient().agents.createShareLink(agentId, { ...limitOpts(opts), ...(opts.regenerate ? { regenerate: true } : {}) }));
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  share
+    .command('update <agentId>')
+    .description('Pause/resume or change limits (same URL)')
+    .option('--pause', 'Stop answering through the link')
+    .option('--resume', 'Answer again')
+    .option('--max <n>', 'Maximum messages (none = no limit)')
+    .option('--expires <date>', 'ISO date, or none')
+    .action(async (agentId: string, opts: { pause?: boolean; resume?: boolean; max?: string; expires?: string }) => {
+      try {
+        if (opts.pause && opts.resume) throw new Error('Pass --pause or --resume, not both');
+        printLink(await getClient().agents.updateShareLink(agentId, {
+          ...(opts.pause ? { isActive: false } : opts.resume ? { isActive: true } : {}),
+          ...limitOpts(opts),
+        }));
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  share
+    .command('revoke <agentId>')
+    .option('--yes', 'Skip confirmation')
+    .action(async (agentId: string, opts: { yes?: boolean }) => {
+      try {
+        if (!opts.yes) {
+          console.error('The URL and every website embed using it stop working. Re-run with --yes to confirm.');
+          process.exit(1);
+        }
+        const r = await getClient().agents.revokeShareLink(agentId);
+        console.log(r.revoked ? 'Shared link revoked.' : 'The agent had no shared link.');
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  agents
+    .command('embed <agentId>')
+    .description('Print the <script> tag that puts the agent\'s chat on a website')
+    .option('--mode <mode>', 'bubble (default) | inline')
+    .option('--lang <lang>', 'es (default) | en')
+    .option('--theme <theme>', 'light (default) | dark')
+    .option('--color <hex>', '#rrggbb (default: your brand colour)')
+    .action(async (agentId: string, opts: { mode?: 'bubble' | 'inline'; lang?: 'es' | 'en'; theme?: 'light' | 'dark'; color?: string }) => {
+      try {
+        const e = await getClient().agents.embedCode(agentId, opts);
+        console.log(e.snippet);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  // ── Export / import ──────────────────────────────────────
+
+  agents
+    .command('export <agentId>')
+    .description('Save the agent as JSON (prompt, models, tools, knowledge, skills, apps)')
+    .option('--out <file>', 'File to write (default: print)')
+    .action(async (agentId: string, opts: { out?: string }) => {
+      try {
+        const data = await getClient().agents.export(agentId);
+        const text = JSON.stringify(data, null, 2);
+        if (!opts.out) return console.log(text);
+        fs.writeFileSync(opts.out, text + '\n');
+        console.log(`Exported to ${opts.out}`);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  agents
+    .command('import <file>')
+    .description('Create an agent from an export file (created turned off unless --activate; app accounts and private documents are not carried over)')
+    .option('--activate', 'Turn the agent on right after importing')
+    .action(async (file: string, o: { activate?: boolean }) => {
+      try {
+        const exportData = JSON.parse(fs.readFileSync(file, 'utf-8')) as Record<string, unknown>;
+        const r = await getClient().agents.import(exportData, { activate: o.activate }) as { agent?: { id?: string; name?: string }; importedAsInactive: boolean; next: string };
+        console.log(`Imported: ${r.agent?.name ?? ''} ${r.agent?.id ?? ''}`.trim());
+        console.log(r.importedAsInactive ? `Turned off. ${r.next}` : 'Turned on.');
       } catch (error) {
         fail(error);
       }
