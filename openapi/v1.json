@@ -33038,7 +33038,7 @@
           },
           "sip": {
             "type": "object",
-            "description": "Calls forwarded by the customer's PBX over SIP; then GET …/sip-credentials",
+            "description": "Calls forwarded by the customer's PBX or phone provider over SIP; then GET …/sip-credentials",
             "properties": {
               "enabled": {
                 "type": "boolean"
@@ -33046,6 +33046,23 @@
               "countryCode": {
                 "type": "string",
                 "example": "52"
+              },
+              "auth": {
+                "type": "string",
+                "enum": [
+                  "credentials",
+                  "ip"
+                ],
+                "description": "\"credentials\" (default) = the provider signs its calls with the user and password; \"ip\" = calls are accepted from allowedIps only, for providers that send no user (Zadarma). The address does not change"
+              },
+              "allowedIps": {
+                "type": "array",
+                "maxItems": 50,
+                "items": {
+                  "type": "string",
+                  "example": "185.45.152.216"
+                },
+                "description": "IPv4 addresses or ranges (a.b.c.d/nn) the provider calls from. Replaces the list. Zadarma's: 185.45.152.216, 185.45.155.33, 185.45.152.164, 185.45.152.177, 185.45.152.200, 185.45.155.14, 185.45.155.16, 195.122.19.20, 195.122.19.29, 15.235.128.70, 31.31.222.201, 185.45.154.15"
               }
             }
           }
@@ -33117,6 +33134,19 @@
               },
               "credentialsSet": {
                 "type": "boolean"
+              },
+              "auth": {
+                "type": "string",
+                "enum": [
+                  "credentials",
+                  "ip"
+                ]
+              },
+              "allowedIps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }

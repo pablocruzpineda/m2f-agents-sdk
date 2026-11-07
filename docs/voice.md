@@ -69,6 +69,27 @@ await m2f.voice.resume(agentId);
 `voice` takes a catalog id (`el-cristina`), a name (`Cristina`, accents
 optional) or any ElevenLabs library voice id.
 
+### Calls from a PBX or phone provider (SIP)
+
+`sip: { enabled: true }` gives the line a SIP address its PBX or phone
+provider forwards calls to. By default the provider signs its calls with a
+user and password (`sipCredentials()`). Providers that send no user, like
+Zadarma, are accepted by the IPs they call from instead; the address does not
+change:
+
+```ts
+await m2f.voice.updateLine(agentId, {
+  sip: {
+    enabled: true,
+    countryCode: '34',
+    auth: 'ip',
+    // Zadarma's, from its guide for Twilio
+    allowedIps: ['185.45.152.216', '185.45.155.33', '185.45.152.164', '185.45.152.177', '185.45.152.200', '185.45.155.14',
+                 '185.45.155.16', '195.122.19.20', '195.122.19.29', '15.235.128.70', '31.31.222.201', '185.45.154.15'],
+  },
+});
+```
+
 ### When the agent answers
 
 By default the agent answers every call. A schedule makes it answer only
@@ -97,6 +118,7 @@ m2f voice lines [--json]
 m2f voice line <agentId>
 m2f voice set <agentId> [--voice <id|name>] [--greeting <text>] [--number <e164>]
 m2f voice configure <agentId> --set '{"schedule":{"enabled":false}}'   # any setting, as JSON
+m2f voice configure <agentId> --set '{"sip":{"enabled":true,"auth":"ip","allowedIps":["185.45.152.216"]}}'
 m2f voice pause <agentId>
 m2f voice resume <agentId>
 m2f voice call <agentId> <to> [--var key=value ...] [--wait] [--json]

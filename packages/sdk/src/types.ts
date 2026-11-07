@@ -1073,7 +1073,7 @@ export interface VoiceLineConfig {
     email: { enabled: boolean; to: string[] };
   };
   webCall: { enabled: boolean };
-  sip: { enabled: boolean; countryCode: string; address: string; credentialsSet: boolean };
+  sip: { enabled: boolean; countryCode: string; address: string; credentialsSet: boolean; auth: 'credentials' | 'ip'; allowedIps: string[] };
 }
 
 export interface VoiceLineUpdate {
@@ -1100,8 +1100,12 @@ export interface VoiceLineUpdate {
     webhook?: { enabled?: boolean; url?: string; secret?: string };
     email?: { enabled?: boolean; to?: string[] };
   };
-  /** Calls from the customer's PBX; then sipCredentials(). */
-  sip?: { enabled?: boolean; countryCode?: string };
+  /**
+   * Calls from the customer's PBX or phone provider; then sipCredentials().
+   * `auth: 'ip'` accepts calls from `allowedIps` only (IPv4 or a.b.c.d/nn), for providers
+   * that send no user, like Zadarma. The SIP address stays the same.
+   */
+  sip?: { enabled?: boolean; countryCode?: string; auth?: 'credentials' | 'ip'; allowedIps?: string[] };
   /** Catalog id (`el-cristina`), name (`Cristina`) or an ElevenLabs voice id. */
   voice?: string;
   greeting?: string;
