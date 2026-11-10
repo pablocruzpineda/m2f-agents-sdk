@@ -791,6 +791,10 @@ export interface AgentChannels {
      */
     liveState: string | null;
     liveCheck: 'ok' | 'failed' | 'skipped';
+    /** Why the live check failed (timeout, credentials refused, server error); null unless `liveCheck` is `"failed"`. */
+    liveError: string | null;
+    /** When the stored connection record was last written (the webhook rewrites it on every connect / disconnect). */
+    flagUpdatedAt: string | null;
     phoneNumber: string | null;
     sessionId: string | null;
     lastInboundAt: string | null;
@@ -1522,4 +1526,18 @@ export interface MetaBusinessProfileUpdate {
   websites?: string[];
   /** JPEG/PNG data URL. */
   picture?: string;
+}
+
+/** Whether Knowledge can index and search: the account's OpenAI key, and whether the graph holds it. */
+export interface KnowledgeKeyStatus {
+  /** The account has an OpenAI key the graph may use (its own, its tenant's, or a trial). */
+  hasKey: boolean;
+  provider: string;
+  /**
+   * Whether the knowledge service holds that key for the graph right now — what indexing and the
+   * agents' graph searches use. Null when it could not be asked.
+   */
+  graphHasKey: boolean | null;
+  /** Present when the two disagree or the service could not be asked: what it means and what fixes it. */
+  note?: string;
 }

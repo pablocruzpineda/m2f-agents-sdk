@@ -364,7 +364,7 @@ export function registerAgentCommands(program: Command): void {
             {
               channel: 'whatsapp',
               detail: r.whatsapp.assigned
-                ? `${r.whatsapp.deviceName ?? ''} live=${r.whatsapp.liveState ?? `not checked (${r.whatsapp.liveCheck})`} last inbound=${r.whatsapp.lastInboundAt ?? 'never'}`
+                ? `${r.whatsapp.deviceName ?? ''} live=${r.whatsapp.liveState ?? `not checked (${r.whatsapp.liveCheck}${r.whatsapp.liveError ? `: ${r.whatsapp.liveError}` : ''})`} last inbound=${r.whatsapp.lastInboundAt ?? 'never'}`
                 : 'not assigned',
             },
             {

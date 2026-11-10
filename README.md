@@ -127,7 +127,7 @@ Configuration lives in `~/.m2f/config.json`. Environment variables override it â
 Conventions that make the CLI scriptable:
 
 - Every `list` / `get` / read command accepts **`--json`** for raw, machine-readable output.
-- Destructive commands accept **`--yes`** to skip interactive confirmation.
+- Destructive commands accept **`--yes`** to skip interactive confirmation. The API's `"confirm": true` (which `--yes` sends) guards against accidental calls; it is not a human approval. If an AI agent runs the CLI or the SDK, have a person approve deletes, credit moves and admin actions before they are sent.
 - Inputs can come from files: `--input-file result.json`, `--system-prompt @prompt.txt`, `--from agent.json`.
 - Non-zero exit code on failure, with the API error message on stderr.
 

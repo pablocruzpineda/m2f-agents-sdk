@@ -2,6 +2,7 @@ import type { HttpClient } from '../http.js';
 import { M2FError } from '../errors.js';
 import { fileForm, type UploadData } from '../upload.js';
 import type {
+  KnowledgeKeyStatus,
   KnowledgeDocument,
   KnowledgeExactValue,
   KnowledgeRecord,
@@ -161,9 +162,9 @@ export class KnowledgeResource {
     await this.http.post('/knowledge/usage/limit', { monthly_episode_limit: limit });
   }
 
-  /** Check whether the account has the OpenAI key Knowledge requires (BYOK). */
-  async keyStatus(): Promise<{ hasKey: boolean; provider: string }> {
-    const res = await this.http.get<{ hasKey: boolean; provider: string }>('/knowledge/key-status');
+  /** Whether Knowledge can work: the account's OpenAI key (BYOK) and whether the graph holds it (`graphHasKey`, `note`). */
+  async keyStatus(): Promise<KnowledgeKeyStatus> {
+    const res = await this.http.get<KnowledgeKeyStatus>('/knowledge/key-status');
     return res.payload!;
   }
 

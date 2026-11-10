@@ -3,7 +3,7 @@
   "info": {
     "title": "Mind2Flow API",
     "version": "1.0.0",
-    "description": "Public REST API for building, managing and executing AI agents, multi-agent crews, devices, custom Python tools and scheduled tasks on the Mind2Flow platform.\n\nAuthenticate with a REST API key (created in the dashboard under Developers → API) sent as `x-api-key: rest_...` or `Authorization: Bearer rest_...`.",
+    "description": "Public REST API for building, managing and executing AI agents, multi-agent crews, devices, custom Python tools and scheduled tasks on the Mind2Flow platform.\n\nAuthenticate with a REST API key (created in the dashboard under Developers → API) sent as `x-api-key: rest_...` or `Authorization: Bearer rest_...`.\n\n**Confirmations.** Actions that delete, spend or move credits, or act as an administrator require `\"confirm\": true` in the body. It guards against accidental calls; it is not a human approval: any client holding the key can send it. When an AI agent drives this API, have a person approve those actions in your own application before it sends `confirm`.",
     "contact": {
       "name": "Mind2Flow",
       "url": "https://app.mind2flow.io"
@@ -13877,7 +13877,7 @@
         ],
         "summary": "How the agent can be reached, and whether each way works",
         "operationId": "getAgentChannels",
-        "description": "Input and output channel, the API endpoint, the assigned WhatsApp device with its number and the date of the last inbound message, and the shared link with its active flag, expiry and request count. `issues` lists what is broken.\n\nWhatsApp is probed LIVE: `whatsapp.liveState` is \"open\" when connected. When the probe cannot run, `liveCheck` is \"failed\" and `notes` says so; the stored `isConnectedFlag` can be stale, so weigh it against `lastInboundAt`.",
+        "description": "Input and output channel, the API endpoint, the assigned WhatsApp device with its number and the date of the last inbound message, and the shared link with its active flag, expiry and request count. `issues` lists what is broken.\n\nWhatsApp is probed LIVE: `whatsapp.liveState` is \"open\" when connected. When the probe cannot run, `liveCheck` is \"failed\", `liveError` says why and `notes` says so; the stored `isConnectedFlag` (last written `flagUpdatedAt`) can be stale, so weigh it against `lastInboundAt`.",
         "parameters": [
           {
             "name": "agentId",
@@ -29604,10 +29604,20 @@
                       "type": "object",
                       "properties": {
                         "hasKey": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "The account has an OpenAI key the graph may use (its own, its tenant's, or a trial)."
                         },
                         "provider": {
                           "type": "string"
+                        },
+                        "graphHasKey": {
+                          "type": "boolean",
+                          "nullable": true,
+                          "description": "Whether the knowledge service holds that key for the graph right now (what indexing and agents' graph searches use); null when it could not be asked."
+                        },
+                        "note": {
+                          "type": "string",
+                          "description": "Present when the two disagree or the knowledge service could not be asked: what it means and what fixes it."
                         }
                       }
                     }
@@ -30838,6 +30848,16 @@
                   "failed",
                   "skipped"
                 ]
+              },
+              "liveError": {
+                "type": "string",
+                "nullable": true,
+                "description": "Why the live check failed (timeout, credentials refused, server error); null unless `liveCheck` is \"failed\"."
+              },
+              "flagUpdatedAt": {
+                "type": "string",
+                "nullable": true,
+                "description": "When the stored connection record was last written; the webhook rewrites it on every connect / disconnect event."
               },
               "phoneNumber": {
                 "type": "string",
