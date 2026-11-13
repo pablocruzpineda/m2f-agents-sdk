@@ -68,7 +68,9 @@ test('verifyPanelWebhook accepts a genuine delivery and nothing else', async () 
   assert.equal(await verifyPanelWebhook({ secret, body, signature, timestamp }), true);
   assert.equal(await verifyPanelWebhook({ secret, body: body + ' ', signature, timestamp }), false, 'tampered body');
   assert.equal(await verifyPanelWebhook({ secret: 'whsec_other', body, signature, timestamp }), false, 'wrong secret');
-  assert.equal(await verifyPanelWebhook({ secret, body, signature: signature.slice(0, -1) + '0', timestamp }), false, 'wrong signature');
+  // Change the last character to one it is not (it may already be '0', and then the signature would still be right).
+  const wrong = signature.slice(0, -1) + (signature.at(-1) === '0' ? '1' : '0');
+  assert.equal(await verifyPanelWebhook({ secret, body, signature: wrong, timestamp }), false, 'wrong signature');
   assert.equal(await verifyPanelWebhook({ secret, body, signature: null, timestamp }), false, 'missing signature');
   assert.equal(await verifyPanelWebhook({ secret, body, signature, timestamp: 'abc' }), false, 'malformed timestamp');
 });
