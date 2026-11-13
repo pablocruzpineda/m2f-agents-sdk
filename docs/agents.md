@@ -46,6 +46,28 @@ CLI: `m2f agents run <agentId> --input "..."` or `--input-file payload.json`.
 > runs. The shadow is created automatically on first execution and re-synced
 > whenever you update the original agent.
 
+## Prompt version history
+
+Every save of a different system prompt — from the console, this SDK, the
+MCP, the in-app Copilot, crews or an import — is kept as a version: when, who
+and from where. Nothing is ever deleted (the versions go with the agent when it
+is deleted), and restoring an old version saves it as a new one.
+
+```ts
+const { versions } = await m2f.agents.promptVersions(agentId);   // newest first
+const v3 = await m2f.agents.promptVersion(agentId, 3);           // with its text
+const diff = await m2f.agents.comparePromptVersions(agentId, 3); // v3 → current prompt
+console.log(`+${diff.added} −${diff.removed}`, diff.lines);
+await m2f.agents.restorePromptVersion(agentId, 3);               // becomes a new version
+```
+
+```
+m2f agents prompt-history <agentId>
+m2f agents prompt-show <agentId> <version>
+m2f agents prompt-diff <agentId> <from> [to]
+m2f agents prompt-restore <agentId> <version> --yes
+```
+
 ## Activity history
 
 ```ts

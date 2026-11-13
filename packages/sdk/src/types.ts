@@ -20,6 +20,52 @@ export interface Pagination {
 // Agents
 // ---------------------------------------------------------------------------
 
+/** Where a prompt change came from. */
+export type PromptVersionSource = 'console' | 'api' | 'mcp' | 'copilot' | 'crew' | 'import' | 'restore' | 'system';
+
+/** One saved system prompt of an agent (without its text). */
+export interface PromptVersionSummary {
+  version: number;
+  createdAt: string;
+  source: PromptVersionSource | null;
+  userId: string | null;
+  userName: string | null;
+  /** e.g. "Restored from version 3 (via api)" or "Prompt before version history". */
+  note: string | null;
+  /** Characters. */
+  length: number;
+  /** The prompt the agent has now. */
+  current: boolean;
+}
+
+export interface PromptVersion extends PromptVersionSummary {
+  systemPrompt: string;
+}
+
+export interface PromptVersionList {
+  agentId: string;
+  currentVersion: number | null;
+  total: number;
+  /** Newest first, up to 200. */
+  versions: PromptVersionSummary[];
+}
+
+export interface PromptVersionDiff {
+  from: number;
+  to: number | 'current';
+  added: number;
+  removed: number;
+  /** Only the changed lines, unless `full` was asked. */
+  lines: Array<{ type: 'same' | 'added' | 'removed'; text: string }>;
+}
+
+export interface PromptVersionRestore {
+  restoredFrom: number;
+  /** The new version it was saved as (or the same one, when nothing changed). */
+  version: number | null;
+  changed: boolean;
+}
+
 export interface Agent {
   id: string;
   name: string;

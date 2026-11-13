@@ -28,6 +28,10 @@ import type {
   ExecuteAgentParams,
   OperationSummary,
   Pagination,
+  PromptVersion,
+  PromptVersionDiff,
+  PromptVersionList,
+  PromptVersionRestore,
   SummaryParams,
   TestRunParams,
   TestRunStarted,
@@ -351,6 +355,38 @@ export class AgentsResource {
   // ── Export / import ───────────────────────────────────────
 
   /** The agent as JSON — what the console's Export downloads. */
+  // ── Prompt version history ──────────────────────────────
+
+  /**
+   * Every system prompt the agent has had, newest first: when, who and from
+   * where (console, api, mcp, copilot…) it was changed. Each save of a
+   * different prompt adds a version; nothing is ever deleted.
+   */
+  async promptVersions(agentId: string): Promise<PromptVersionList> {
+    const res = await this.http.get<PromptVersionList>(`/agents/${agentId}/prompt-versions`);
+    return res.payload!;
+  }
+
+  /** One version, with its full text. */
+  async promptVersion(agentId: string, version: number): Promise<PromptVersion> {
+    const res = await this.http.get<PromptVersion>(`/agents/${agentId}/prompt-versions/${version}`);
+    return res.payload!;
+  }
+
+  /** The lines removed and added from `from` to `to` (default: the current prompt). */
+  async comparePromptVersions(agentId: string, from: number, to?: number, options: { full?: boolean } = {}): Promise<PromptVersionDiff> {
+    const res = await this.http.get<PromptVersionDiff>(`/agents/${agentId}/prompt-versions/compare`, {
+      query: { from, to, full: options.full ? 'true' : undefined },
+    });
+    return res.payload!;
+  }
+
+  /** Put an old version back as the agent's prompt. It is saved as a new version; the history is never rewritten. */
+  async restorePromptVersion(agentId: string, version: number): Promise<PromptVersionRestore> {
+    const res = await this.http.post<PromptVersionRestore>(`/agents/${agentId}/prompt-versions/${version}/restore`);
+    return res.payload!;
+  }
+
   async export(agentId: string): Promise<Record<string, unknown>> {
     return (await this.http.get<Record<string, unknown>>(`/agents/${encodeURIComponent(agentId)}/export`)).payload!;
   }

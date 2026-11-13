@@ -638,6 +638,77 @@ export function registerAgentCommands(program: Command): void {
       }
     });
 
+  // ── Prompt version history ───────────────────────────────
+
+  agents
+    .command('prompt-history <agentId>')
+    .description('Every saved system prompt of the agent, newest first: when, who and from where')
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, opts: { json?: boolean }) => {
+      try {
+        const list = await getClient().agents.promptVersions(agentId);
+        if (opts.json) return printJson(list);
+        printTable(
+          list.versions.map((v) => ({
+            version: `v${v.version}${v.current ? ' (current)' : ''}`,
+            when: v.createdAt.replace('T', ' ').slice(0, 16),
+            from: v.source ?? '',
+            by: v.userName ?? '',
+            chars: v.length,
+            note: v.note ?? '',
+          })),
+          ['version', 'when', 'from', 'by', 'chars', 'note'],
+        );
+        if (list.total > list.versions.length) console.log(`(${list.total} versions; showing the newest ${list.versions.length})`);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  agents
+    .command('prompt-show <agentId> <version>')
+    .description('Print one version of the agent\'s system prompt')
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, version: string, opts: { json?: boolean }) => {
+      try {
+        const v = await getClient().agents.promptVersion(agentId, Number(version));
+        if (opts.json) return printJson(v);
+        console.log(v.systemPrompt);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  agents
+    .command('prompt-diff <agentId> <from> [to]')
+    .description('What changed between two versions (to defaults to the current prompt)')
+    .option('--full', 'Also print the unchanged lines')
+    .option('--json', 'Output raw JSON')
+    .action(async (agentId: string, from: string, to: string | undefined, opts: { full?: boolean; json?: boolean }) => {
+      try {
+        const d = await getClient().agents.comparePromptVersions(agentId, Number(from), to === undefined ? undefined : Number(to), { full: opts.full });
+        if (opts.json) return printJson(d);
+        console.log(`v${d.from} → ${d.to === 'current' ? 'current' : `v${d.to}`}: +${d.added} −${d.removed} lines`);
+        for (const l of d.lines) console.log(`${l.type === 'added' ? '+' : l.type === 'removed' ? '-' : ' '} ${l.text}`);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
+  agents
+    .command('prompt-restore <agentId> <version>')
+    .description('Put an old version back as the agent\'s prompt (saved as a new version)')
+    .option('--yes', 'Required: it changes how the agent answers')
+    .action(async (agentId: string, version: string, opts: { yes?: boolean }) => {
+      try {
+        if (!opts.yes) throw new Error('It changes how the agent answers. Add --yes to go ahead.');
+        const r = await getClient().agents.restorePromptVersion(agentId, Number(version));
+        console.log(r.changed ? `Restored v${r.restoredFrom} as v${r.version}.` : `v${r.restoredFrom} is already the agent's prompt: nothing changed.`);
+      } catch (error) {
+        fail(error);
+      }
+    });
+
   // ── Export / import ──────────────────────────────────────
 
   agents
