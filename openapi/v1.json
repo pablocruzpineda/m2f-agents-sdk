@@ -23387,6 +23387,7 @@
         ],
         "summary": "Run a scheduled task now",
         "operationId": "runScheduledTask",
+        "description": "The agent runs for real and spends credits. `result.response` is the agent reply as text, as stored in the execution history.",
         "parameters": [
           {
             "name": "taskId",
@@ -23412,6 +23413,24 @@
                     },
                     "message": {
                       "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "result": {
+                          "type": "object",
+                          "properties": {
+                            "response": {
+                              "type": "string",
+                              "description": "The agent reply as text (up to 100,000 characters)."
+                            },
+                            "error": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -23545,7 +23564,7 @@
                         "executions": {
                           "type": "array",
                           "items": {
-                            "type": "object"
+                            "$ref": "#/components/schemas/ScheduledTaskExecution"
                           }
                         }
                       }
@@ -30293,7 +30312,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-api-key",
-        "description": "REST API key (rest_...)"
+        "description": "REST API key (rest_...). Its scopes decide what it may call: `*` (all), or per resource `<resource>:read`, `<resource>:write`, `<resource>:*` for agents, devices, tenant, tools (also `tools:execute`), crews and knowledge. Each operation names the scope it needs."
       },
       "BearerAuth": {
         "type": "http",
@@ -34105,6 +34124,53 @@
           },
           "billedOn": {
             "type": "string"
+          }
+        }
+      },
+      "ScheduledTaskExecution": {
+        "type": "object",
+        "description": "One run of a scheduled task.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "ok",
+              "error",
+              "timeout"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "durationMs": {
+            "type": "integer",
+            "nullable": true
+          },
+          "response": {
+            "type": "string",
+            "nullable": true,
+            "description": "The agent reply as text, whole up to 100,000 characters (a crew run: its final answer)."
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

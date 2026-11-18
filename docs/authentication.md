@@ -31,9 +31,16 @@ a missing scope get `403` with a `requiredScope` field in the body.
 | `tools:read` | List/get custom tools, discover public tools |
 | `tools:write` | Create/update/delete custom tools |
 | `tools:execute` | Run Python code in the sandbox |
-| `tenant:read` | Account info, credit balance |
-| `agents:*`, `crews:*`, … | All operations on that resource |
+| `tenant:read` | Account, organization and tenant data, credit balance |
+| `tenant:write` | Change account, organization and tenant settings |
+| `knowledge:read` | Search the knowledge graph, list its sources |
+| `knowledge:write` | Add, change and delete knowledge |
+| `agents:*`, `crews:*`, `knowledge:*`, … | All operations on that resource |
 | `*` | Everything |
+
+The console's key form offers exactly this list. MCP keys use the same scopes,
+except that crews are `crew:read` / `crew:write` / `crew:execute` / `crew:*`
+and there are `projects:*` scopes (see [MCP](mcp.md)).
 
 ## Rate limits
 

@@ -1,6 +1,8 @@
 import type { HttpClient } from '../http.js';
 import type {
   ScheduledTask,
+  ScheduledTaskExecution,
+  ScheduledTaskRunResult,
   ScheduledTaskCreateParams,
   ScheduledTaskUpdateParams,
 } from '../types.js';
@@ -45,15 +47,15 @@ export class ScheduledTasksResource {
     return res.payload!.task;
   }
 
-  /** Trigger a task to run immediately. */
-  async run(taskId: string): Promise<unknown> {
-    const res = await this.http.post<{ result: unknown }>(`/scheduled-tasks/${taskId}/run`);
+  /** Trigger a task to run immediately (the agent runs for real and spends credits). */
+  async run(taskId: string): Promise<ScheduledTaskRunResult | undefined> {
+    const res = await this.http.post<{ result: ScheduledTaskRunResult }>(`/scheduled-tasks/${taskId}/run`);
     return res.payload?.result;
   }
 
   /** Get a task's execution history. */
-  async executions(taskId: string, options: { limit?: number } = {}): Promise<unknown[]> {
-    const res = await this.http.get<{ executions: unknown[] }>(
+  async executions(taskId: string, options: { limit?: number } = {}): Promise<ScheduledTaskExecution[]> {
+    const res = await this.http.get<{ executions: ScheduledTaskExecution[] }>(
       `/scheduled-tasks/${taskId}/executions`,
       { query: { limit: options.limit } }
     );

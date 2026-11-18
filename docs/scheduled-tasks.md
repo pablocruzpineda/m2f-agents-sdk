@@ -24,8 +24,9 @@ const task = await m2f.scheduledTasks.create({
 });
 
 await m2f.scheduledTasks.toggle(task.id);        // enable/disable
-await m2f.scheduledTasks.run(task.id);           // run right now
+const { response } = await m2f.scheduledTasks.run(task.id) ?? {};  // run right now
 const history = await m2f.scheduledTasks.executions(task.id);
+// history[0].response is the agent's reply as text, whole up to 100,000 characters
 ```
 
 ## CLI

@@ -389,6 +389,27 @@ export interface ScheduledTask {
   [key: string]: unknown;
 }
 
+/** One run of a scheduled task. */
+export interface ScheduledTaskExecution {
+  id: string;
+  taskId: string;
+  status: 'running' | 'ok' | 'error' | 'timeout' | string;
+  startedAt: string;
+  completedAt?: string | null;
+  durationMs?: number | null;
+  /** The agent reply as text, whole up to 100,000 characters (a crew run: its final answer). */
+  response?: string | null;
+  error?: string | null;
+  createdAt?: string;
+}
+
+/** What `scheduledTasks.run()` returns. */
+export interface ScheduledTaskRunResult {
+  /** The agent reply as text, as stored in the execution history. */
+  response?: string;
+  error?: string | null;
+}
+
 export interface ScheduledTaskCreateParams {
   agentId: string;
   name: string;
